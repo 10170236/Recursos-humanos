@@ -170,7 +170,7 @@ public class ExpedienteForm extends JFrame {
         setContentPane(mainPanel);
 
         // Lógica visual reactiva e interactiva
-        configurarLógicaVisualReactiva();
+        configurarLogicaVisualReactiva();
         configurarValidacionesVisuales();
 
         // Acción de limpiar visual
@@ -208,7 +208,7 @@ public class ExpedienteForm extends JFrame {
         cardIdentidad.add(txtNombreCompleto, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.2;
-        cardIdentidad.add(crearEtiquetaCampo("F. Nacimiento:", true), gbc);
+        cardIdentidad.add(crearEtiquetaCampo("Fecha de Nacimiento:", true), gbc);
         
         gbc.gridx = 1; gbc.weightx = 0.8;
         spinFechaNacimiento = new JSpinner(new SpinnerDateModel());
@@ -251,7 +251,7 @@ public class ExpedienteForm extends JFrame {
 
         gbc2.gridx = 0; gbc2.gridy = 2; gbc2.weightx = 0.2;
         gbc2.anchor = GridBagConstraints.NORTHWEST;
-        cardContacto.add(crearEtiquetaCampo("Dirección:", false), gbc2);
+        cardContacto.add(crearEtiquetaCampo("Dirección Domiciliaria:", false), gbc2);
         
         gbc2.gridx = 1; gbc2.weightx = 0.8;
         gbc2.fill = GridBagConstraints.BOTH;
@@ -316,7 +316,7 @@ public class ExpedienteForm extends JFrame {
         gbc2.anchor = GridBagConstraints.WEST;
 
         gbc2.gridx = 0; gbc2.gridy = 0; gbc2.weightx = 0.2;
-        cardContrato.add(crearEtiquetaCampo("Fecha Ingreso:", true), gbc2);
+        cardContrato.add(crearEtiquetaCampo("Fecha de Ingreso:", true), gbc2);
         
         gbc2.gridx = 1; gbc2.weightx = 0.8;
         spinFechaIngreso = new JSpinner(new SpinnerDateModel());
@@ -477,7 +477,7 @@ public class ExpedienteForm extends JFrame {
         return label;
     }
 
-    private void configurarLógicaVisualReactiva() {
+    private void configurarLogicaVisualReactiva() {
         // Al escribir el nombre, actualizar el avatar y el nombre del header en tiempo real
         txtNombreCompleto.getDocument().addDocumentListener(new DocumentListener() {
             private void actualizar() {
@@ -519,7 +519,7 @@ public class ExpedienteForm extends JFrame {
                     String email = txtCorreo.getText().trim();
                     if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
                         txtCorreo.putClientProperty("JComponent.outline", "error");
-                        txtCorreo.setToolTipText("El formato de correo no es válido.");
+                        txtCorreo.setToolTipText("El formato del correo electrónico no es válido.");
                     } else {
                         txtCorreo.putClientProperty("JComponent.outline", null);
                         txtCorreo.setToolTipText(null);
@@ -539,7 +539,7 @@ public class ExpedienteForm extends JFrame {
                         txtSalario.setToolTipText(null);
                     } catch (NumberFormatException ex) {
                         txtSalario.putClientProperty("JComponent.outline", "error");
-                        txtSalario.setToolTipText("El salario debe ser un número decimal válido.");
+                        txtSalario.setToolTipText("El salario debe ser un valor numérico decimal válido.");
                     }
                 }
             }
@@ -549,7 +549,7 @@ public class ExpedienteForm extends JFrame {
     private boolean validarCampoVacio(JTextField campo) {
         if (campo.getText().trim().isEmpty()) {
             campo.putClientProperty("JComponent.outline", "error");
-            campo.setToolTipText("Este campo es requerido.");
+            campo.setToolTipText("Este campo es obligatorio.");
             return false;
         } else {
             campo.putClientProperty("JComponent.outline", null);
