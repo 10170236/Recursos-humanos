@@ -1,16 +1,22 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- */
-
 package com.mycompany.recursos.humanos;
 
+import com.formdev.flatlaf.FlatLightLaf;
+import com.mycompany.recursos.humanos.views.ExpedienteForm;
+import javax.swing.SwingUtilities;
+
 /**
- *
- * @author carol
+ * Clase principal de Recursos Humanos.
+ * Inicializa el tema FlatLaf y lanza el Formulario de Expediente.
  */
 public class RecursosHumanos {
 
     public static void main(String[] args) {
-        System.out.println("Hello World!");
+        // Inicializar el look and feel moderno (FlatLaf)
+        FlatLightLaf.setup();
+        
+        // Ejecutar el formulario en el Event Dispatch Thread (EDT)
+        SwingUtilities.invokeLater(() -> {
+            new ExpedienteForm().setVisible(true);
+        });
     }
 }
