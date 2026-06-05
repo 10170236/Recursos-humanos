@@ -11,8 +11,8 @@ import java.awt.event.FocusEvent;
 import java.util.Date;
 
 /**
- * Vista premium y profesional del Formulario de Expedientes de Empleados.
- * Capa exclusivamente visual, sin lógica de base de datos ni negocio.
+ * Vista premium estilo Dashboard Dividido del Formulario de Expedientes de Empleados.
+ * Capa exclusivamente visual, sin lógica de base de datos ni de negocio.
  */
 public class ExpedienteForm extends JFrame {
 
@@ -44,95 +44,149 @@ public class ExpedienteForm extends JFrame {
     private JButton btnLimpiar;
     private JButton btnCancelar;
 
-    // Componentes dinámicos del Encabezado Premium
+    // Componentes de la Barra Lateral Izquierda (Sidebar)
     private AvatarPanel panelAvatar;
     private JLabel lblNombreEmpleadoHeader;
+    private JLabel lblPuestoHeader;
     private StatusBadge badgeEstadoHeader;
+    
+    // Etiquetas de datos rápidos en Sidebar
+    private JLabel lblSidebarDni;
+    private JLabel lblSidebarDept;
+    private JLabel lblSidebarCorreo;
+    private JLabel lblSidebarTelefono;
 
     public ExpedienteForm() {
-        super("Portal del Empleado - Gestión de Expediente");
+        super("Portal del Empleado - Expediente Digital");
         initUI();
     }
 
     private void initUI() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(920, 720);
+        setSize(1000, 720);
         setLocationRelativeTo(null);
-        setMinimumSize(new Dimension(850, 650));
+        setMinimumSize(new Dimension(920, 660));
 
-        // Panel Principal con fondo gris premium claro
-        JPanel mainPanel = new JPanel(new BorderLayout(15, 15));
-        mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
-        mainPanel.setBackground(new Color(248, 249, 250)); // Slate background
+        // Panel de fondo gris sutil de la app
+        JPanel mainContainer = new JPanel(new BorderLayout(0, 0));
+        mainContainer.setBackground(new Color(248, 249, 250));
 
-        // --- ENCABEZADO DE PERFIL PREMIUM (Estilo Tarjeta de Usuario) ---
-        JPanel panelPerfil = new JPanel(new BorderLayout(15, 15));
-        panelPerfil.setBackground(Color.WHITE);
-        panelPerfil.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(233, 236, 239), 1, true),
-            BorderFactory.createEmptyBorder(15, 20, 15, 20)
-        ));
+        // ==========================================
+        // 1. BARRA LATERAL DE PERFIL (Sidebar - Izquierda)
+        // ==========================================
+        JPanel sidebarPanel = new JPanel();
+        sidebarPanel.setPreferredSize(new Dimension(280, 0));
+        sidebarPanel.setBackground(Color.WHITE);
+        sidebarPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(230, 235, 242)));
+        sidebarPanel.setLayout(new GridBagLayout());
 
-        // Panel Izquierdo: Avatar e Identidad
-        JPanel panelIdentidad = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
-        panelIdentidad.setOpaque(false);
+        GridBagConstraints sGbc = new GridBagConstraints();
+        sGbc.gridx = 0;
+        sGbc.gridy = GridBagConstraints.RELATIVE;
+        sGbc.fill = GridBagConstraints.HORIZONTAL;
+        sGbc.anchor = GridBagConstraints.CENTER;
+        sGbc.insets = new Insets(10, 20, 10, 20);
 
+        // Avatar Circular
         panelAvatar = new AvatarPanel();
-        panelIdentidad.add(panelAvatar);
+        JPanel avatarContainer = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        avatarContainer.setOpaque(false);
+        avatarContainer.add(panelAvatar);
+        sGbc.insets = new Insets(30, 20, 10, 20);
+        sidebarPanel.add(avatarContainer, sGbc);
 
-        JPanel panelInfoTextos = new JPanel(new GridLayout(2, 1, 0, 4));
-        panelInfoTextos.setOpaque(false);
-
-        lblNombreEmpleadoHeader = new JLabel("Nuevo Empleado");
-        lblNombreEmpleadoHeader.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        // Nombre del Empleado
+        lblNombreEmpleadoHeader = new JLabel("Nuevo Empleado", SwingConstants.CENTER);
+        lblNombreEmpleadoHeader.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblNombreEmpleadoHeader.setForeground(new Color(33, 37, 41));
-        panelInfoTextos.add(lblNombreEmpleadoHeader);
+        sGbc.insets = new Insets(10, 15, 2, 15);
+        sidebarPanel.add(lblNombreEmpleadoHeader, sGbc);
 
-        JPanel panelCargoYEstado = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        panelCargoYEstado.setOpaque(false);
+        // Puesto del Empleado
+        lblPuestoHeader = new JLabel("Puesto no asignado", SwingConstants.CENTER);
+        lblPuestoHeader.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblPuestoHeader.setForeground(new Color(108, 117, 125));
+        sGbc.insets = new Insets(0, 15, 10, 15);
+        sidebarPanel.add(lblPuestoHeader, sGbc);
 
-        JLabel lblCargoFijo = new JLabel("Ficha de Expediente Laboral");
-        lblCargoFijo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        lblCargoFijo.setForeground(new Color(108, 117, 125));
-        panelCargoYEstado.add(lblCargoFijo);
-
+        // Badge de Estado
         badgeEstadoHeader = new StatusBadge();
-        panelCargoYEstado.add(badgeEstadoHeader);
+        JPanel badgeContainer = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        badgeContainer.setOpaque(false);
+        badgeContainer.add(badgeEstadoHeader);
+        sGbc.insets = new Insets(5, 20, 25, 20);
+        sidebarPanel.add(badgeContainer, sGbc);
 
-        panelInfoTextos.add(panelCargoYEstado);
-        panelIdentidad.add(panelInfoTextos);
+        // Línea Divisora
+        JSeparator separator = new JSeparator();
+        separator.setForeground(new Color(233, 236, 239));
+        sGbc.insets = new Insets(0, 15, 20, 15);
+        sidebarPanel.add(separator, sGbc);
 
-        panelPerfil.add(panelIdentidad, BorderLayout.WEST);
+        // Título Datos Rápidos
+        JLabel lblQuickFacts = new JLabel("INFORMACIÓN RÁPIDA");
+        lblQuickFacts.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lblQuickFacts.setForeground(new Color(173, 181, 189));
+        sGbc.insets = new Insets(0, 20, 12, 20);
+        sidebarPanel.add(lblQuickFacts, sGbc);
 
-        // Panel Derecho: Visualizadores rápidos
-        JPanel panelMetricas = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 0));
-        panelMetricas.setOpaque(false);
-        // Podríamos añadir estadísticas rápidas en el futuro, por ahora dejamos espacio limpio
-        panelPerfil.add(panelMetricas, BorderLayout.EAST);
+        // Panel de Datos Rápidos
+        JPanel panelDatosRapidos = new JPanel(new GridLayout(4, 1, 0, 16));
+        panelDatosRapidos.setOpaque(false);
 
-        mainPanel.add(panelPerfil, BorderLayout.NORTH);
+        lblSidebarDni = crearLabelQuickFact("DNI", "No registrado");
+        lblSidebarDept = crearLabelQuickFact("Departamento", "No asignado");
+        lblSidebarCorreo = crearLabelQuickFact("Correo", "No registrado");
+        lblSidebarTelefono = crearLabelQuickFact("Teléfono", "No registrado");
 
-        // --- PANEL DE PESTAÑAS (Estilizado con FlatLaf) ---
+        panelDatosRapidos.add(lblSidebarDni);
+        panelDatosRapidos.add(lblSidebarDept);
+        panelDatosRapidos.add(lblSidebarCorreo);
+        panelDatosRapidos.add(lblSidebarTelefono);
+
+        sGbc.insets = new Insets(0, 20, 20, 20);
+        sidebarPanel.add(panelDatosRapidos, sGbc);
+
+        // Glue inferior para empujar todo hacia arriba
+        sGbc.weighty = 1.0;
+        sidebarPanel.add(Box.createVerticalGlue(), sGbc);
+
+        mainContainer.add(sidebarPanel, BorderLayout.WEST);
+
+        // ==========================================
+        // 2. PANEL DE TRABAJO PRINCIPAL (Derecha)
+        // ==========================================
+        JPanel mainWorkPanel = new JPanel(new BorderLayout(15, 15));
+        mainWorkPanel.setOpaque(false);
+        mainWorkPanel.setBorder(new EmptyBorder(25, 25, 25, 25));
+
+        // Título de la sección principal
+        JPanel titlePanel = new JPanel(new BorderLayout());
+        titlePanel.setOpaque(false);
+        JLabel lblMainTitle = new JLabel("Formulario de Expediente");
+        lblMainTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblMainTitle.setForeground(new Color(33, 37, 41));
+        titlePanel.add(lblMainTitle, BorderLayout.WEST);
+        mainWorkPanel.add(titlePanel, BorderLayout.NORTH);
+
+        // Pestañas Subrayadas (Estilo FlatLaf)
         JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.putClientProperty("JTabbedPane.showTabSeparators", true);
-        tabbedPane.putClientProperty("JTabbedPane.tabHeight", 40);
-        tabbedPane.putClientProperty("JTabbedPane.tabInsets", new Insets(0, 24, 0, 24));
-        tabbedPane.putClientProperty("JTabbedPane.selectedBackground", Color.WHITE);
-        tabbedPane.putClientProperty("JTabbedPane.hasFullBorder", true);
+        tabbedPane.putClientProperty("JTabbedPane.tabType", "underlined");
+        tabbedPane.putClientProperty("JTabbedPane.tabHeight", 45);
+        tabbedPane.putClientProperty("JTabbedPane.tabInsets", new Insets(0, 20, 0, 20));
+        tabbedPane.putClientProperty("JTabbedPane.selectedBackground", new Color(248, 249, 250));
+        tabbedPane.putClientProperty("JTabbedPane.hasFullBorder", false);
         tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 13));
 
-        // 1. Pestaña Datos Personales
         tabbedPane.addTab("Datos Personales", crearPanelDatosPersonales());
-        
-        // 2. Pestaña Datos Laborales
         tabbedPane.addTab("Datos Laborales", crearPanelDatosLaborales());
-        
-        // 3. Pestaña Documentación
-        tabbedPane.addTab("Documentación", crearPanelDocumentacion());
+        tabbedPane.addTab("Documentos", crearPanelDocumentacion());
 
-        mainPanel.add(tabbedPane, BorderLayout.CENTER);
+        mainWorkPanel.add(tabbedPane, BorderLayout.CENTER);
 
-        // --- PANEL DE ACCIONES INFERIOR (Estilo moderno) ---
+        // ==========================================
+        // 3. BARRA DE ACCIONES INFERIOR (Derecha)
+        // ==========================================
         JPanel actionPanel = new JPanel(new BorderLayout());
         actionPanel.setOpaque(false);
         actionPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
@@ -155,7 +209,7 @@ public class ExpedienteForm extends JFrame {
 
         btnGuardar = new JButton("Guardar Expediente");
         btnGuardar.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnGuardar.setBackground(new Color(13, 110, 253)); // Azul Premium
+        btnGuardar.setBackground(new Color(13, 110, 253)); // Royal Blue
         btnGuardar.setForeground(Color.WHITE);
         btnGuardar.putClientProperty("JButton.buttonType", "roundRect");
         btnGuardar.putClientProperty("JComponent.minimumWidth", 180);
@@ -165,215 +219,164 @@ public class ExpedienteForm extends JFrame {
         rightActions.add(btnGuardar);
 
         actionPanel.add(rightActions, BorderLayout.EAST);
-        mainPanel.add(actionPanel, BorderLayout.SOUTH);
+        mainWorkPanel.add(actionPanel, BorderLayout.SOUTH);
 
-        setContentPane(mainPanel);
+        mainContainer.add(mainWorkPanel, BorderLayout.CENTER);
 
-        // Lógica visual reactiva e interactiva
+        setContentPane(mainContainer);
+
+        // Lógica visual e interactiva
         configurarLogicaVisualReactiva();
         configurarValidacionesVisuales();
 
-        // Acción de limpiar visual
+        // Acción de limpiar
         btnLimpiar.addActionListener(e -> limpiarFormulario());
     }
 
     private JPanel crearPanelDatosPersonales() {
-        JPanel mainTabPanel = new JPanel(new BorderLayout(15, 15));
-        mainTabPanel.setBackground(Color.WHITE);
-        mainTabPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(230, 235, 242), 1, true),
+            BorderFactory.createEmptyBorder(24, 24, 24, 24)
+        ));
 
-        // Sub-Tarjeta 1: Identidad
-        JPanel cardIdentidad = crearTarjeta("Información de Identidad");
+        JPanel gridPanel = new JPanel(new GridBagLayout());
+        gridPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 0.5;
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.2;
-        cardIdentidad.add(crearEtiquetaCampo("Cédula / DNI:", true), gbc);
-        
-        gbc.gridx = 1; gbc.weightx = 0.8;
+        // Fila 0: DNI y Nombre Completo
         txtDni = new JTextField();
         txtDni.putClientProperty("JTextField.placeholderText", "Ej. 1-2345-6789");
         txtDni.putClientProperty("JComponent.roundRect", true);
-        cardIdentidad.add(txtDni, gbc);
+        gbc.gridx = 0; gbc.gridy = 0;
+        gridPanel.add(crearInputGroup("Cédula / DNI", txtDni, true), gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.2;
-        cardIdentidad.add(crearEtiquetaCampo("Nombre Completo:", true), gbc);
-        
-        gbc.gridx = 1; gbc.weightx = 0.8;
         txtNombreCompleto = new JTextField();
         txtNombreCompleto.putClientProperty("JTextField.placeholderText", "Ej. Juan Pérez González");
         txtNombreCompleto.putClientProperty("JComponent.roundRect", true);
-        cardIdentidad.add(txtNombreCompleto, gbc);
+        gbc.gridx = 1;
+        gridPanel.add(crearInputGroup("Nombre Completo", txtNombreCompleto, true), gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.2;
-        cardIdentidad.add(crearEtiquetaCampo("Fecha de Nacimiento:", true), gbc);
-        
-        gbc.gridx = 1; gbc.weightx = 0.8;
+        // Fila 1: Fecha Nacimiento y Género
         spinFechaNacimiento = new JSpinner(new SpinnerDateModel());
         spinFechaNacimiento.setEditor(new JSpinner.DateEditor(spinFechaNacimiento, "dd/MM/yyyy"));
         spinFechaNacimiento.putClientProperty("JComponent.roundRect", true);
-        cardIdentidad.add(spinFechaNacimiento, gbc);
+        gbc.gridx = 0; gbc.gridy = 1;
+        gridPanel.add(crearInputGroup("Fecha de Nacimiento", spinFechaNacimiento, true), gbc);
 
-        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0.2;
-        cardIdentidad.add(crearEtiquetaCampo("Género:", false), gbc);
-        
-        gbc.gridx = 1; gbc.weightx = 0.8;
         comboGenero = new JComboBox<>(new String[]{"Seleccionar...", "Masculino", "Femenino", "Otro"});
         comboGenero.putClientProperty("JComponent.roundRect", true);
-        cardIdentidad.add(comboGenero, gbc);
+        gbc.gridx = 1;
+        gridPanel.add(crearInputGroup("Género", comboGenero, false), gbc);
 
-        // Sub-Tarjeta 2: Contacto
-        JPanel cardContacto = crearTarjeta("Información de Contacto");
-        GridBagConstraints gbc2 = new GridBagConstraints();
-        gbc2.insets = new Insets(8, 8, 8, 8);
-        gbc2.fill = GridBagConstraints.HORIZONTAL;
-        gbc2.anchor = GridBagConstraints.WEST;
-
-        gbc2.gridx = 0; gbc2.gridy = 0; gbc2.weightx = 0.2;
-        cardContacto.add(crearEtiquetaCampo("Teléfono:", false), gbc2);
-        
-        gbc2.gridx = 1; gbc2.weightx = 0.8;
+        // Fila 2: Teléfono y Correo
         txtTelefono = new JTextField();
         txtTelefono.putClientProperty("JTextField.placeholderText", "Ej. 8888-8888");
         txtTelefono.putClientProperty("JComponent.roundRect", true);
-        cardContacto.add(txtTelefono, gbc2);
+        gbc.gridx = 0; gbc.gridy = 2;
+        gridPanel.add(crearInputGroup("Teléfono de Contacto", txtTelefono, false), gbc);
 
-        gbc2.gridx = 0; gbc2.gridy = 1; gbc2.weightx = 0.2;
-        cardContacto.add(crearEtiquetaCampo("Correo Electrónico:", true), gbc2);
-        
-        gbc2.gridx = 1; gbc2.weightx = 0.8;
         txtCorreo = new JTextField();
         txtCorreo.putClientProperty("JTextField.placeholderText", "ejemplo@correo.com");
         txtCorreo.putClientProperty("JComponent.roundRect", true);
-        cardContacto.add(txtCorreo, gbc2);
+        gbc.gridx = 1;
+        gridPanel.add(crearInputGroup("Correo Electrónico", txtCorreo, true), gbc);
 
-        gbc2.gridx = 0; gbc2.gridy = 2; gbc2.weightx = 0.2;
-        gbc2.anchor = GridBagConstraints.NORTHWEST;
-        cardContacto.add(crearEtiquetaCampo("Dirección Domiciliaria:", false), gbc2);
-        
-        gbc2.gridx = 1; gbc2.weightx = 0.8;
-        gbc2.fill = GridBagConstraints.BOTH;
-        gbc2.weighty = 1.0;
+        // Fila 3: Dirección (Span 2 columnas)
         txtDireccion = new JTextArea(3, 20);
         txtDireccion.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         txtDireccion.setLineWrap(true);
         txtDireccion.setWrapStyleWord(true);
         JScrollPane scrollDir = new JScrollPane(txtDireccion);
         scrollDir.putClientProperty("JComponent.roundRect", true);
-        cardContacto.add(scrollDir, gbc2);
+        
+        gbc.gridx = 0; gbc.gridy = 3;
+        gbc.gridwidth = 2;
+        gbc.weighty = 1.0;
+        gridPanel.add(crearInputGroup("Dirección Domiciliaria", scrollDir, false), gbc);
 
-        // Integrar sub-tarjetas
-        JPanel container = new JPanel(new GridLayout(1, 2, 20, 0));
-        container.setOpaque(false);
-        container.add(cardIdentidad);
-        container.add(cardContacto);
-
-        mainTabPanel.add(container, BorderLayout.CENTER);
-        return mainTabPanel;
+        panel.add(gridPanel, BorderLayout.CENTER);
+        return panel;
     }
 
     private JPanel crearPanelDatosLaborales() {
-        JPanel mainTabPanel = new JPanel(new BorderLayout(15, 15));
-        mainTabPanel.setBackground(Color.WHITE);
-        mainTabPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(230, 235, 242), 1, true),
+            BorderFactory.createEmptyBorder(24, 24, 24, 24)
+        ));
 
-        // Sub-Tarjeta 1: Detalles de Cargo
-        JPanel cardCargo = crearTarjeta("Puesto y Ubicación");
+        JPanel gridPanel = new JPanel(new GridBagLayout());
+        gridPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 0.5;
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.2;
-        cardCargo.add(crearEtiquetaCampo("Puesto / Cargo:", true), gbc);
-        
-        gbc.gridx = 1; gbc.weightx = 0.8;
+        // Fila 0: Puesto y Departamento
         txtPuesto = new JTextField();
-        txtPuesto.putClientProperty("JTextField.placeholderText", "Ej. Ingeniero Senior");
+        txtPuesto.putClientProperty("JTextField.placeholderText", "Ej. Especialista de TI");
         txtPuesto.putClientProperty("JComponent.roundRect", true);
-        cardCargo.add(txtPuesto, gbc);
+        gbc.gridx = 0; gbc.gridy = 0;
+        gridPanel.add(crearInputGroup("Puesto / Cargo", txtPuesto, true), gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.2;
-        cardCargo.add(crearEtiquetaCampo("Departamento:", true), gbc);
-        
-        gbc.gridx = 1; gbc.weightx = 0.8;
         comboDepartamento = new JComboBox<>(new String[]{
             "Seleccionar...", "Recursos Humanos", "Tecnología de Información", "Finanzas", "Ventas", "Operaciones"
         });
         comboDepartamento.putClientProperty("JComponent.roundRect", true);
-        cardCargo.add(comboDepartamento, gbc);
+        gbc.gridx = 1;
+        gridPanel.add(crearInputGroup("Departamento", comboDepartamento, true), gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2;
-        cardCargo.add(Box.createVerticalGlue(), gbc);
-
-        // Sub-Tarjeta 2: Contrato y Nómina
-        JPanel cardContrato = crearTarjeta("Detalles Contractuales");
-        GridBagConstraints gbc2 = new GridBagConstraints();
-        gbc2.insets = new Insets(8, 8, 8, 8);
-        gbc2.fill = GridBagConstraints.HORIZONTAL;
-        gbc2.anchor = GridBagConstraints.WEST;
-
-        gbc2.gridx = 0; gbc2.gridy = 0; gbc2.weightx = 0.2;
-        cardContrato.add(crearEtiquetaCampo("Fecha de Ingreso:", true), gbc2);
-        
-        gbc2.gridx = 1; gbc2.weightx = 0.8;
+        // Fila 1: Fecha Ingreso y Salario
         spinFechaIngreso = new JSpinner(new SpinnerDateModel());
         spinFechaIngreso.setEditor(new JSpinner.DateEditor(spinFechaIngreso, "dd/MM/yyyy"));
         spinFechaIngreso.putClientProperty("JComponent.roundRect", true);
-        cardContrato.add(spinFechaIngreso, gbc2);
+        gbc.gridx = 0; gbc.gridy = 1;
+        gridPanel.add(crearInputGroup("Fecha de Ingreso", spinFechaIngreso, true), gbc);
 
-        gbc2.gridx = 0; gbc2.gridy = 1; gbc2.weightx = 0.2;
-        cardContrato.add(crearEtiquetaCampo("Salario Mensual:", true), gbc2);
-        
-        gbc2.gridx = 1; gbc2.weightx = 0.8;
         txtSalario = new JTextField();
         txtSalario.putClientProperty("JTextField.placeholderText", "0.00");
         txtSalario.putClientProperty("JTextField.leadingText", "$");
         txtSalario.putClientProperty("JComponent.roundRect", true);
-        cardContrato.add(txtSalario, gbc2);
+        gbc.gridx = 1;
+        gridPanel.add(crearInputGroup("Salario Mensual", txtSalario, true), gbc);
 
-        gbc2.gridx = 0; gbc2.gridy = 2; gbc2.weightx = 0.2;
-        cardContrato.add(crearEtiquetaCampo("Horario Laboral:", false), gbc2);
-        
-        gbc2.gridx = 1; gbc2.weightx = 0.8;
+        // Fila 2: Horario y Estado
         comboHorario = new JComboBox<>(new String[]{
             "Matutino (8:00 AM - 5:00 PM)", "Vespertino (1:00 PM - 9:00 PM)", "Nocturno (9:00 PM - 6:00 AM)", "Mixto"
         });
         comboHorario.putClientProperty("JComponent.roundRect", true);
-        cardContrato.add(comboHorario, gbc2);
+        gbc.gridx = 0; gbc.gridy = 2;
+        gridPanel.add(crearInputGroup("Horario Laboral", comboHorario, false), gbc);
 
-        gbc2.gridx = 0; gbc2.gridy = 3; gbc2.weightx = 0.2;
-        cardContrato.add(crearEtiquetaCampo("Estado:", true), gbc2);
-        
-        gbc2.gridx = 1; gbc2.weightx = 0.8;
         comboEstado = new JComboBox<>(new String[]{"Activo", "Inactivo", "Licencia"});
         comboEstado.putClientProperty("JComponent.roundRect", true);
-        cardContrato.add(comboEstado, gbc2);
+        gbc.gridx = 1;
+        gridPanel.add(crearInputGroup("Estado del Empleado", comboEstado, true), gbc);
 
-        // Integrar sub-tarjetas
-        JPanel container = new JPanel(new GridLayout(1, 2, 20, 0));
-        container.setOpaque(false);
-        container.add(cardCargo);
-        container.add(cardContrato);
+        // Espacio vacío para balancear el Grid
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
+        gbc.weighty = 1.0;
+        gridPanel.add(Box.createVerticalGlue(), gbc);
 
-        mainTabPanel.add(container, BorderLayout.CENTER);
-        return mainTabPanel;
+        panel.add(gridPanel, BorderLayout.CENTER);
+        return panel;
     }
 
     private JPanel crearPanelDocumentacion() {
         JPanel panel = new JPanel(new BorderLayout(15, 15));
         panel.setBackground(Color.WHITE);
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(230, 235, 242), 1, true),
+            BorderFactory.createEmptyBorder(24, 24, 24, 24)
+        ));
 
-        // Título de la tabla
-        JLabel lblTablaTitulo = new JLabel("Documentos del Expediente");
-        lblTablaTitulo.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        lblTablaTitulo.setForeground(new Color(33, 37, 41));
-        panel.add(lblTablaTitulo, BorderLayout.NORTH);
-
-        // Tabla de documentos estilizada
+        // Tabla de documentos
         String[] columnas = {"Nombre del Archivo", "Formato / Tipo", "Fecha de Subida", "Estado de Revisión"};
         modeloTablaDocs = new DefaultTableModel(columnas, 0) {
             @Override
@@ -387,8 +390,8 @@ public class ExpedienteForm extends JFrame {
 
         tablaDocumentos = new JTable(modeloTablaDocs);
         tablaDocumentos.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        tablaDocumentos.setRowHeight(32); // Mayor espaciado en la tabla
-        tablaDocumentos.setShowVerticalLines(false); // Grid horizontal solamente
+        tablaDocumentos.setRowHeight(35); // Tabla cómoda
+        tablaDocumentos.setShowVerticalLines(false);
         tablaDocumentos.setGridColor(new Color(240, 242, 245));
         tablaDocumentos.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
         tablaDocumentos.getTableHeader().setBackground(new Color(248, 249, 250));
@@ -397,7 +400,7 @@ public class ExpedienteForm extends JFrame {
         scrollTabla.setBorder(BorderFactory.createLineBorder(new Color(230, 235, 242)));
         panel.add(scrollTabla, BorderLayout.CENTER);
 
-        // Botones de acción de documentos
+        // Acciones
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         panelBotones.setOpaque(false);
 
@@ -417,7 +420,7 @@ public class ExpedienteForm extends JFrame {
         panelBotones.add(btnEliminarDoc);
         panel.add(panelBotones, BorderLayout.SOUTH);
 
-        // Lógica visual básica
+        // Lógica
         btnAdjuntarDoc.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
             int returnVal = fileChooser.showOpenDialog(this);
@@ -440,34 +443,22 @@ public class ExpedienteForm extends JFrame {
         return panel;
     }
 
-    private JPanel crearTarjeta(String tituloSeccion) {
-        JPanel tarjeta = new JPanel();
-        tarjeta.setBackground(Color.WHITE);
-        // Borde suave de tarjeta moderno
-        tarjeta.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(230, 235, 242), 1, true),
-            BorderFactory.createEmptyBorder(18, 18, 18, 18)
-        ));
-        tarjeta.setLayout(new GridBagLayout());
-        
-        // Título de la sub-tarjeta
-        JLabel lblTitulo = new JLabel(tituloSeccion);
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        lblTitulo.setForeground(new Color(73, 80, 87));
-        
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
-        gbc.weightx = 1.0;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(0, 8, 15, 8);
-        tarjeta.add(lblTitulo, gbc);
+    // ==========================================
+    // MÉTODOS DE SOPORTE E INTERACTIVIDAD
+    // ==========================================
 
-        return tarjeta;
+    private JPanel crearInputGroup(String labelText, JComponent inputComponent, boolean esObligatorio) {
+        JPanel panel = new JPanel(new BorderLayout(0, 6));
+        panel.setOpaque(false);
+        JLabel label = crearEtiquetaCampo(labelText, esObligatorio);
+        panel.add(label, BorderLayout.NORTH);
+        panel.add(inputComponent, BorderLayout.CENTER);
+        return panel;
     }
 
     private JLabel crearEtiquetaCampo(String texto, boolean esObligatorio) {
         JLabel label = new JLabel();
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        label.setFont(new Font("Segoe UI", Font.BOLD, 12));
         label.setForeground(new Color(73, 80, 87));
         if (esObligatorio) {
             label.setText("<html>" + texto + " <font color='#DC3545'>*</font></html>");
@@ -477,18 +468,30 @@ public class ExpedienteForm extends JFrame {
         return label;
     }
 
+    private JLabel crearLabelQuickFact(String factName, String factValue) {
+        JLabel label = new JLabel();
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        actualizarTextoQuickFact(label, factName, factValue);
+        return label;
+    }
+
+    private void actualizarTextoQuickFact(JLabel label, String factName, String factValue) {
+        String cleanValue = (factValue == null || factValue.trim().isEmpty()) ? "No registrado" : factValue.trim();
+        if ("No asignado".equalsIgnoreCase(cleanValue) || "No registrado".equalsIgnoreCase(cleanValue) || "Seleccionar...".equalsIgnoreCase(cleanValue)) {
+            label.setText("<html><font color='#868E96'>" + factName + ":</font> <font color='#ADB5BD'><i>" + cleanValue + "</i></font></html>");
+        } else {
+            label.setText("<html><font color='#868E96'>" + factName + ":</font> <font color='#495057'><b>" + cleanValue + "</b></font></html>");
+        }
+    }
+
     private void configurarLogicaVisualReactiva() {
-        // Al escribir el nombre, actualizar el avatar y el nombre del header en tiempo real
+        // Enlace del Nombre Completo (Avatar y Header)
         txtNombreCompleto.getDocument().addDocumentListener(new DocumentListener() {
             private void actualizar() {
                 String text = txtNombreCompleto.getText();
                 SwingUtilities.invokeLater(() -> {
                     panelAvatar.setInitials(text);
-                    if (text.trim().isEmpty()) {
-                        lblNombreEmpleadoHeader.setText("Nuevo Empleado");
-                    } else {
-                        lblNombreEmpleadoHeader.setText(text.trim());
-                    }
+                    lblNombreEmpleadoHeader.setText(text.trim().isEmpty() ? "Nuevo Empleado" : text.trim());
                 });
             }
             @Override public void insertUpdate(DocumentEvent e) { actualizar(); }
@@ -496,13 +499,63 @@ public class ExpedienteForm extends JFrame {
             @Override public void changedUpdate(DocumentEvent e) { actualizar(); }
         });
 
-        // Al cambiar el combo de estado, actualizar el badge del header inmediatamente
+        // Enlace del DNI en Sidebar
+        txtDni.getDocument().addDocumentListener(new DocumentListener() {
+            private void actualizar() {
+                String text = txtDni.getText();
+                SwingUtilities.invokeLater(() -> actualizarTextoQuickFact(lblSidebarDni, "DNI", text));
+            }
+            @Override public void insertUpdate(DocumentEvent e) { actualizar(); }
+            @Override public void removeUpdate(DocumentEvent e) { actualizar(); }
+            @Override public void changedUpdate(DocumentEvent e) { actualizar(); }
+        });
+
+        // Enlace del Correo en Sidebar
+        txtCorreo.getDocument().addDocumentListener(new DocumentListener() {
+            private void actualizar() {
+                String text = txtCorreo.getText();
+                SwingUtilities.invokeLater(() -> actualizarTextoQuickFact(lblSidebarCorreo, "Correo", text));
+            }
+            @Override public void insertUpdate(DocumentEvent e) { actualizar(); }
+            @Override public void removeUpdate(DocumentEvent e) { actualizar(); }
+            @Override public void changedUpdate(DocumentEvent e) { actualizar(); }
+        });
+
+        // Enlace del Teléfono en Sidebar
+        txtTelefono.getDocument().addDocumentListener(new DocumentListener() {
+            private void actualizar() {
+                String text = txtTelefono.getText();
+                SwingUtilities.invokeLater(() -> actualizarTextoQuickFact(lblSidebarTelefono, "Teléfono", text));
+            }
+            @Override public void insertUpdate(DocumentEvent e) { actualizar(); }
+            @Override public void removeUpdate(DocumentEvent e) { actualizar(); }
+            @Override public void changedUpdate(DocumentEvent e) { actualizar(); }
+        });
+
+        // Enlace del Puesto en Header
+        txtPuesto.getDocument().addDocumentListener(new DocumentListener() {
+            private void actualizar() {
+                String text = txtPuesto.getText();
+                SwingUtilities.invokeLater(() -> lblPuestoHeader.setText(text.trim().isEmpty() ? "Puesto no asignado" : text.trim()));
+            }
+            @Override public void insertUpdate(DocumentEvent e) { actualizar(); }
+            @Override public void removeUpdate(DocumentEvent e) { actualizar(); }
+            @Override public void changedUpdate(DocumentEvent e) { actualizar(); }
+        });
+
+        // Enlace del Departamento en Sidebar
+        comboDepartamento.addActionListener(e -> {
+            String selected = (String) comboDepartamento.getSelectedItem();
+            actualizarTextoQuickFact(lblSidebarDept, "Departamento", selected);
+        });
+
+        // Enlace de Estado en Header
         comboEstado.addActionListener(e -> {
             String selected = (String) comboEstado.getSelectedItem();
             badgeEstadoHeader.setStatus(selected);
         });
-        
-        // Inicializar el badge del header con el estado por defecto
+
+        // Inicializar estados iniciales en el Sidebar
         badgeEstadoHeader.setStatus("Activo");
     }
 
@@ -579,10 +632,17 @@ public class ExpedienteForm extends JFrame {
         txtCorreo.putClientProperty("JComponent.outline", null);
         txtPuesto.putClientProperty("JComponent.outline", null);
         txtSalario.putClientProperty("JComponent.outline", null);
-        
+
+        // Restablecer etiquetas Sidebar
         lblNombreEmpleadoHeader.setText("Nuevo Empleado");
+        lblPuestoHeader.setText("Puesto no asignado");
         panelAvatar.setInitials("");
         badgeEstadoHeader.setStatus("Activo");
+        
+        actualizarTextoQuickFact(lblSidebarDni, "DNI", "No registrado");
+        actualizarTextoQuickFact(lblSidebarDept, "Departamento", "No asignado");
+        actualizarTextoQuickFact(lblSidebarCorreo, "Correo", "No registrado");
+        actualizarTextoQuickFact(lblSidebarTelefono, "Teléfono", "No registrado");
     }
 
     // --- Getters y Setters de los componentes para interacción con Controladores (Regla de Oro) ---
@@ -613,13 +673,13 @@ public class ExpedienteForm extends JFrame {
  */
 class AvatarPanel extends JPanel {
     private String initials = "??";
-    private final Color startColor = new Color(74, 85, 104); // Slate dark
+    private final Color startColor = new Color(74, 85, 104);
     private final Color endColor = new Color(45, 55, 72);
 
     public AvatarPanel() {
-        setPreferredSize(new Dimension(60, 60));
-        setMinimumSize(new Dimension(60, 60));
-        setMaximumSize(new Dimension(60, 60));
+        setPreferredSize(new Dimension(80, 80));
+        setMinimumSize(new Dimension(80, 80));
+        setMaximumSize(new Dimension(80, 80));
         setOpaque(false);
     }
 
@@ -653,12 +713,12 @@ class AvatarPanel extends JPanel {
 
         // Texto de iniciales blanco
         g2.setColor(Color.WHITE);
-        g2.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        g2.setFont(new Font("Segoe UI", Font.BOLD, 26));
         FontMetrics fm = g2.getFontMetrics();
         int textW = fm.stringWidth(initials);
         int textH = fm.getAscent();
 
-        g2.drawString(initials, (w - textW) / 2, (h + textH) / 2 - 3);
+        g2.drawString(initials, (w - textW) / 2, (h + textH) / 2 - 4);
         g2.dispose();
     }
 }
@@ -677,7 +737,7 @@ class StatusBadge extends JPanel {
     }
 
     public void setStatus(String status) {
-        this.text = status == null ? "Activo" : status;
+        this.text = (status == null || "Seleccionar...".equalsIgnoreCase(status)) ? "Activo" : status;
         if ("Activo".equalsIgnoreCase(this.text)) {
             dotColor = new Color(46, 204, 113);
             bgColor = new Color(46, 204, 113, 35);
