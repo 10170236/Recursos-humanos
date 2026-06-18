@@ -1,7 +1,6 @@
 package com.mycompany.recursos.humanos;
 
 import com.formdev.flatlaf.FlatLightLaf;
-import com.mycompany.recursos.humanos.views.ExpedienteForm;
 import javax.swing.SwingUtilities;
 
 /**
