@@ -16,6 +16,9 @@ import java.util.Date;
  */
 public class ExpedienteForm extends JFrame {
 
+    // --- NUEVO: ID Oculto para controlar si es edición o nuevo ---
+    private String idEmpleadoOculto = null;
+
     // Componentes Datos Personales
     private JTextField txtDni;
     private JTextField txtNombreCompleto;
@@ -41,6 +44,7 @@ public class ExpedienteForm extends JFrame {
 
     // Botones de acción principales
     private JButton btnGuardar;
+    private JButton btnEditar; // 🟢 Nuevo Botón para actualizar
     private JButton btnLimpiar;
     private JButton btnCancelar;
 
@@ -208,9 +212,19 @@ public class ExpedienteForm extends JFrame {
         btnGuardar.putClientProperty("JButton.buttonType", "roundRect");
         btnGuardar.putClientProperty("JComponent.minimumWidth", 180);
 
+        // 🟢 NUEVO BOTÓN: Actualizar Expediente (Diseño verde éxito)
+        btnEditar = new JButton("Actualizar Expediente");
+        btnEditar.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnEditar.setBackground(new Color(25, 135, 84)); 
+        btnEditar.setForeground(Color.WHITE);
+        btnEditar.putClientProperty("JButton.buttonType", "roundRect");
+        btnEditar.putClientProperty("JComponent.minimumWidth", 180);
+        btnEditar.setVisible(false); // Oculto por defecto; el controlador decidirá cuándo mostrarlo
+
         rightActions.add(btnCancelar);
         rightActions.add(btnLimpiar);
         rightActions.add(btnGuardar);
+        rightActions.add(btnEditar); // 🟢 Agregado a la barra visual
 
         actionPanel.add(rightActions, BorderLayout.EAST);
         mainWorkPanel.add(actionPanel, BorderLayout.SOUTH);
@@ -580,6 +594,7 @@ public class ExpedienteForm extends JFrame {
     }
 
     private void limpiarFormulario() {
+        this.idEmpleadoOculto = null; // 🟢 Se limpia el ID oculto
         txtDni.setText("");
         txtNombreCompleto.setText("");
         txtTelefono.setText("");
@@ -611,7 +626,10 @@ public class ExpedienteForm extends JFrame {
         actualizarTextoQuickFact(lblSidebarTelefono, "Teléfono", "No registrado");
     }
 
-    // --- Getters ---
+    // --- Getters y Setters ---
+    public String getIdEmpleadoOculto() { return idEmpleadoOculto; }
+    public void setIdEmpleadoOculto(String id) { this.idEmpleadoOculto = id; }
+    
     public JTextField getTxtDni() { return txtDni; }
     public JTextField getTxtNombreCompleto() { return txtNombreCompleto; }
     public JTextField getTxtTelefono() { return txtTelefono; }
@@ -630,6 +648,7 @@ public class ExpedienteForm extends JFrame {
     public JButton getBtnAdjuntarDoc() { return btnAdjuntarDoc; }
     public JButton getBtnEliminarDoc() { return btnEliminarDoc; }
     public JButton getBtnGuardar() { return btnGuardar; }
+    public JButton getBtnEditar() { return btnEditar; } // 🟢 Getter del nuevo botón
     public JButton getBtnCancelar() { return btnCancelar; }
 }
 

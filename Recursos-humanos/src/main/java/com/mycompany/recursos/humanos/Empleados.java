@@ -7,7 +7,6 @@ import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-// IMPORTS PARA LA CONEXIÓN A LA BASE DE DATOS
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -22,6 +21,7 @@ public class Empleados extends JFrame {
     private final Color azulNavy = new Color(10, 25, 47);
     private final Color azulRoyal = new Color(13, 110, 253);
     private final Color blancoFondo = new Color(248, 249, 250);
+    private final Color verdeExito = new Color(25, 135, 84); // 🟢 Nuevo color para Editar
     
     private JTable tablaEmpleados;
     private DefaultTableModel modeloTabla;
@@ -56,9 +56,11 @@ public class Empleados extends JFrame {
         panelBotones.setOpaque(false);
 
         JButton btnNuevo = crearBoton("Nuevo Empleado", azulRoyal);
+        JButton btnEditar = crearBoton("Editar Empleado", verdeExito); // 🟢 Nuevo Botón
         JButton btnVer = crearBoton("Ver Expediente", azulNavy);
 
         panelBotones.add(btnNuevo);
+        panelBotones.add(btnEditar); // 🟢 Agregado al panel
         panelBotones.add(btnVer);
         headerPanel.add(panelBotones, BorderLayout.EAST);
 
@@ -112,6 +114,15 @@ public class Empleados extends JFrame {
             }
         });
 
+        // 🟢 Evento del Botón Editar
+        btnEditar.addActionListener(e -> {
+            if (tablaEmpleados.getSelectedRow() == -1) {
+                JOptionPane.showMessageDialog(this, "Seleccione un empleado de la tabla para editar su información.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            } else {
+                abrirExpedienteSeleccionado();
+            }
+        });
+
         btnNuevo.addActionListener(e -> {
             ExpedienteForm vistaExpediente = new ExpedienteForm();
             ExpedienteController controlador = new ExpedienteController(vistaExpediente);
@@ -135,7 +146,7 @@ public class Empleados extends JFrame {
     }
 
     // =========================================================================
-    // CAMBIO PRINCIPAL: CONEXIÓN MEDIANTE MVC PASANDO EL ID SELECCIONADO
+    // CONEXIÓN MEDIANTE MVC PASANDO EL ID SELECCIONADO
     // =========================================================================
     private void abrirExpedienteSeleccionado() {
         int fila = tablaEmpleados.getSelectedRow();

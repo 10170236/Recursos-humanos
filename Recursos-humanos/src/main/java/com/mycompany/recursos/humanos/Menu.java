@@ -19,6 +19,7 @@ public class Menu extends JFrame {
     private final Color grisTexto = new Color(108, 117, 125);
     
     private String rolUsuario; // Guarda el rol del usuario conectado
+    private JPanel contentArea; // Se saca como variable de clase para intercambio dinámico si es necesario
 
     // Constructor predeterminado (por si se ejecuta directo)
     public Menu() {
@@ -65,23 +66,31 @@ public class Menu extends JFrame {
         // Botones del Menú
         sidebar.add(crearBotonMenu("Dashboard", "fa-home"), gbc);
         
-        // 1. NUEVO BOTÓN: Lista General de Empleados
+        // 1. Lista General de Empleados
         JButton btnListaEmpleados = crearBotonMenu("Empleados", "fa-users");
         btnListaEmpleados.addActionListener(e -> abrirListaEmpleados());
         sidebar.add(btnListaEmpleados, gbc);
         
-        // 2. BOTÓN MODIFICADO: Agregar Nuevo Empleado (Antes "Expedientes")
+        // 2. Agregar Nuevo Empleado
         JButton btnNuevoEmpleado = crearBotonMenu("Agregar Nuevo Empleado", "fa-user-plus");
         btnNuevoEmpleado.addActionListener(e -> abrirExpediente());
         sidebar.add(btnNuevoEmpleado, gbc);
 
-        sidebar.add(crearBotonMenu("Reloj Marcador", "fa-clock"), gbc);
+        // 3. Reloj Marcador
+        JButton btnRelojMarcador = crearBotonMenu("Reloj Marcador", "fa-clock");
+        btnRelojMarcador.addActionListener(e -> abrirRelojMarcador());
+        sidebar.add(btnRelojMarcador, gbc);
         
-        // Botón de Planillas con Control de Privacidad por Rol
+        // =========================================================================
+        // 🔌 MODIFICACIÓN: CONEXIÓN DEL MÓDULO VISUAL DE PLANILLAS
+        // =========================================================================
         JButton btnPlanillas = crearBotonMenu("Planillas", "fa-file-invoice-dollar");
         if (rolUsuario.equalsIgnoreCase("Supervisor")) {
             btnPlanillas.setEnabled(false); // Deshabilitar si es supervisor
             btnPlanillas.setToolTipText("Acceso denegado: Solo disponible para Gerente de RRHH.");
+        } else {
+            // Solo conectamos la vista si tiene privilegios de Gerente_RRHH o Admin
+            btnPlanillas.addActionListener(e -> abrirPlanillas());
         }
         sidebar.add(btnPlanillas, gbc);
         
@@ -101,7 +110,7 @@ public class Menu extends JFrame {
         // ==========================================
         // 2. CONTENIDO PRINCIPAL (Derecha)
         // ==========================================
-        JPanel contentArea = new JPanel(new BorderLayout());
+        contentArea = new JPanel(new BorderLayout());
         contentArea.setOpaque(false);
         contentArea.setBorder(new EmptyBorder(30, 40, 30, 40));
 
@@ -200,27 +209,39 @@ public class Menu extends JFrame {
         return card;
     }
 
-    // =========================================================================
-    // MODIFICACIÓN: AQUÍ SE AÑADIÓ LA CONEXIÓN DEL PATRÓN MVC AL EXPEDIENTE
-    // =========================================================================
     private void abrirExpediente() {
-        // 1. Instanciamos la Vista (Formulario Premium)
         ExpedienteForm vistaExpediente = new ExpedienteForm();
-        // 2. Instanciamos el Controlador y le conectamos la vista
         ExpedienteController controlador = new ExpedienteController(vistaExpediente);
-        // 3. Mostramos la ventana en pantalla
         vistaExpediente.setVisible(true);
     }
 
-    // =========================================================================
-    // NUEVO MÉTODO: ABRIR LA LISTA DE EMPLEADOS
-    // =========================================================================
     private void abrirListaEmpleados() {
-        // Descomentamos la llamada a tu clase Empleados
         Empleados lista = new Empleados();
         lista.setVisible(true);
     }
-    // LÓGICA DE CERRAR SESIÓN
+
+    private void abrirRelojMarcador() {
+        JFrame contenedorReloj = new JFrame("Estación Biométrica - Reloj Marcador");
+        contenedorReloj.setSize(900, 550);
+        contenedorReloj.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        contenedorReloj.setLocationRelativeTo(this);
+        contenedorReloj.add(new RelojMarcadorPanel());
+        contenedorReloj.setVisible(true);
+    }
+
+    // =========================================================================
+    // NUEVO MÉTODO: INYECTAR EL MÓDULO VISUAL DE PLANILLAS
+    // =========================================================================
+    private void abrirPlanillas() {
+        JFrame contenedorPlanilla = new JFrame("Módulo de Planillas y Nómina");
+        contenedorPlanilla.setSize(1000, 700);
+        contenedorPlanilla.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        contenedorPlanilla.setLocationRelativeTo(this);
+        // Instanciamos y agregamos el panel creado en el paso anterior
+        contenedorPlanilla.add(new PlanillaPanel());
+        contenedorPlanilla.setVisible(true);
+    }
+
     private void cerrarSesion() {
         int confirmacion = JOptionPane.showConfirmDialog(
                 this, 
@@ -231,7 +252,6 @@ public class Menu extends JFrame {
         );
         
         if (confirmacion == JOptionPane.YES_OPTION) {
-            // Regresa a la ventana de login (Inicio) y destruye el menú
             Inicio loginForm = new Inicio();
             loginForm.setVisible(true);
             this.dispose(); 

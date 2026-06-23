@@ -1,8 +1,7 @@
 package com.mycompany.recursos.humanos;
 
-import com.mycompany.recursos.humanos.CalculadorFinanciero;
-
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -11,33 +10,33 @@ public class ProcesadorNomina {
 
     /**
      * Calcula el salario neto conectándose dinámicamente a la tabla parametros_ley.
+     * Aplica estrictamente el redondeo bancario (HALF_EVEN) en cada operación.
      * * @param horasTrabajadas Total de horas calculadas por ControlHoras
      * @param pagoPorHora Cuánto se le paga por hora al empleado
-     * @return El salario neto final redondeado y listo para guardar
+     * @return El salario neto final redondeado a 2 decimales y listo para la BD
      */
     public static BigDecimal obtenerSalarioNeto(BigDecimal horasTrabajadas, BigDecimal pagoPorHora) {
-        // 1. Calculamos el sueldo base (Salario Bruto = Horas * Pago)
-        BigDecimal salarioBruto = horasTrabajadas.multiply(pagoPorHora);
+        // 1. Calculamos el sueldo base aplicando redondeo desde el primer paso
+        BigDecimal salarioBruto = horasTrabajadas.multiply(pagoPorHora).setScale(2, RoundingMode.HALF_EVEN);
         
-        // Acumulador para la suma de todos los descuentos (ISSS, AFP, Renta, etc.)
+        // Acumulador para la suma de todos los descuentos
         BigDecimal totalDescuentos = BigDecimal.ZERO;
         
-        // Consulta SQL para traer solo los impuestos que estén activos (estado = true)
+        // Consulta SQL: Nota -> Asegúrate de que la columna 'estado' (booleana) exista en tu tabla parametros_ley
         String sql = "SELECT porcentaje_descuento FROM parametros_ley WHERE estado = true";
 
         try (Connection con = Conexion.obtenerConexion();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
-            // 2. Bucle Dinámico: Recorre cada impuesto de la base de datos
+            // 2. Bucle Dinámico: Recorre cada impuesto activo
             while (rs.next()) {
-                // Obtenemos el DECIMAL(5,4) de MySQL directo como BigDecimal
                 BigDecimal porcentaje = rs.getBigDecimal("porcentaje_descuento");
                 
-                // Calculamos cuánto le quitaremos por este impuesto específico
-                BigDecimal deduccion = salarioBruto.multiply(porcentaje);
+                // ⚠️ CRÍTICO: Calculamos la deducción y redondeamos INMEDIATAMENTE
+                BigDecimal deduccion = salarioBruto.multiply(porcentaje).setScale(2, RoundingMode.HALF_EVEN);
                 
-                // Lo sumamos al total de descuentos
+                // Sumamos al total acumulado
                 totalDescuentos = totalDescuentos.add(deduccion);
             }
 
@@ -48,7 +47,7 @@ public class ProcesadorNomina {
         // 3. Aplicamos la fórmula matemática: Salario_Neto = Bruto - Deducciones
         BigDecimal salarioNeto = salarioBruto.subtract(totalDescuentos);
 
-        // 4. Retornamos el valor pasando por el redondeo bancario
-        return CalculadorFinanciero.redondear(salarioNeto);
+        // 4. Retornamos el valor asegurando la escala final de 2 decimales
+        return salarioNeto.setScale(2, RoundingMode.HALF_EVEN);
     }
 }

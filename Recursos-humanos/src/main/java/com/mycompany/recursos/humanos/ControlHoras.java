@@ -1,54 +1,76 @@
 package com.mycompany.recursos.humanos;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
+/**
+ * Motor de Gestión de Tiempos e Incidencias.
+ * Compara las marcas reales contra los parámetros de la jornada laboral establecida.
+ */
 public class ControlHoras {
 
-    /**
-     * Calcula el total de horas trabajadas de un empleado consultando la tabla marcaciones.
-     * * @param idEmpleado El ID del empleado en la base de datos.
-     * @return Total de horas trabajadas en formato BigDecimal para precisión financiera.
-     */
-    public static BigDecimal obtenerTotalHoras(int idEmpleado) {
-        BigDecimal totalHoras = BigDecimal.ZERO;
-        
-        // Query para obtener todas las marcaciones válidas (que tengan hora de salida registrada)
-        // Nota: En un sistema en producción real, aquí agregaríamos un "WHERE fecha BETWEEN inicio AND fin" 
-        // para filtrar por quincena o mes.
-        String sql = "SELECT fecha_hora_entrada, fecha_hora_salida FROM marcaciones WHERE id_empleado = ? AND fecha_hora_salida IS NOT NULL";
+    private static final LocalTime ENTRADA_TEORICA = LocalTime.of(8, 0);  // 08:00 AM
+    private static final LocalTime SALIDA_TEORICA = LocalTime.of(17, 0); // 05:00 PM
+    private static final int TOLERANCIA_MINUTOS = 15;
 
-        try (Connection con = Conexion.obtenerConexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-             
+    // Clase contenedora para retornar los totales consolidados de un periodo
+    public static class ReporteIncidencias {
+        public long totalMinutosTardanza = 0;
+        public double totalHorasExtras = 0;
+    }
+
+    /**
+     * Procesa todas las marcaciones de un empleado en un rango de fechas.
+     */
+    public static ReporteIncidencias procesarIncidenciasPeriodo(int idEmpleado, java.sql.Date fechaInicio, java.sql.Date fechaFin, Connection con) {
+        ReporteIncidencias reporte = new ReporteIncidencias();
+        
+        String sql = "SELECT fecha_hora_entrada, fecha_hora_salida FROM marcaciones " +
+                     "WHERE id_empleado = ? AND DATE(fecha_hora_entrada) BETWEEN ? AND ?";
+                     
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, idEmpleado);
+            ps.setDate(2, fechaInicio);
+            ps.setDate(3, fechaFin);
             
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    // 1. Extraemos los DATETIME de MySQL y los pasamos a LocalDateTime de Java
-                    LocalDateTime entrada = rs.getTimestamp("fecha_hora_entrada").toLocalDateTime();
-                    LocalDateTime salida = rs.getTimestamp("fecha_hora_salida").toLocalDateTime();
+                    Timestamp entradaStamp = rs.getTimestamp("fecha_hora_entrada");
+                    Timestamp salidaStamp = rs.getTimestamp("fecha_hora_salida");
                     
-                    // 2. Calculamos los minutos exactos. ¡LocalDateTime maneja la medianoche y cambios de día por sí solo!
-                    long minutosTrabajados = Duration.between(entrada, salida).toMinutes();
+                    if (entradaStamp != null) {
+                        LocalDateTime entradaReal = entradaStamp.toLocalDateTime();
+                        LocalTime horaEntrada = entradaReal.toLocalTime();
+                        
+                        // Evaluar entrada tardía
+                        if (horaEntrada.isAfter(ENTRADA_TEORICA)) {
+                            long minutosDemora = Duration.between(ENTRADA_TEORICA, horaEntrada).toMinutes();
+                            if (minutosDemora > TOLERANCIA_MINUTOS) {
+                                reporte.totalMinutosTardanza += minutosDemora;
+                            }
+                        }
+                    }
                     
-                    // 3. Convertimos los minutos a horas decimales (minutos / 60) con Redondeo Bancario
-                    BigDecimal horasTurno = new BigDecimal(minutosTrabajados)
-                            .divide(new BigDecimal(60), 2, RoundingMode.HALF_EVEN);
-                    
-                    // 4. Sumamos las horas de este turno al acumulador total del empleado
-                    totalHoras = totalHoras.add(horasTurno);
+                    if (salidaStamp != null) {
+                        LocalDateTime salidaReal = salidaStamp.toLocalDateTime();
+                        LocalTime horaSalida = salidaReal.toLocalTime();
+                        
+                        // Evaluar horas extras (Turno Diurno estándar)
+                        if (horaSalida.isAfter(SALIDA_TEORICA)) {
+                            long minutosExtra = Duration.between(SALIDA_TEORICA, horaSalida).toMinutes();
+                            reporte.totalHorasExtras += (minutosExtra / 60.0);
+                        }
+                    }
                 }
             }
         } catch (Exception e) {
-            System.err.println("🚨 Error al calcular horas del empleado " + idEmpleado + ": " + e.getMessage());
+            System.err.println("🚨 Error procesando control de horas: " + e.getMessage());
         }
-
-        return totalHoras;
+        return reporte;
     }
 }
