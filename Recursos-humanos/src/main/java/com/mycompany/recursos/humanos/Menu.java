@@ -65,9 +65,15 @@ public class Menu extends JFrame {
         // Botones del Menú
         sidebar.add(crearBotonMenu("Dashboard", "fa-home"), gbc);
         
-        JButton btnExpediente = crearBotonMenu("Expedientes", "fa-user-plus");
-        btnExpediente.addActionListener(e -> abrirExpediente());
-        sidebar.add(btnExpediente, gbc);
+        // 1. NUEVO BOTÓN: Lista General de Empleados
+        JButton btnListaEmpleados = crearBotonMenu("Empleados", "fa-users");
+        btnListaEmpleados.addActionListener(e -> abrirListaEmpleados());
+        sidebar.add(btnListaEmpleados, gbc);
+        
+        // 2. BOTÓN MODIFICADO: Agregar Nuevo Empleado (Antes "Expedientes")
+        JButton btnNuevoEmpleado = crearBotonMenu("Agregar Nuevo Empleado", "fa-user-plus");
+        btnNuevoEmpleado.addActionListener(e -> abrirExpediente());
+        sidebar.add(btnNuevoEmpleado, gbc);
 
         sidebar.add(crearBotonMenu("Reloj Marcador", "fa-clock"), gbc);
         
@@ -194,12 +200,26 @@ public class Menu extends JFrame {
         return card;
     }
 
+    // =========================================================================
+    // MODIFICACIÓN: AQUÍ SE AÑADIÓ LA CONEXIÓN DEL PATRÓN MVC AL EXPEDIENTE
+    // =========================================================================
     private void abrirExpediente() {
-       // Ahora abre la tabla de Empleados en lugar del formulario vacío
-    Empleados lista = new Empleados();
-    lista.setVisible(true);
+        // 1. Instanciamos la Vista (Formulario Premium)
+        ExpedienteForm vistaExpediente = new ExpedienteForm();
+        // 2. Instanciamos el Controlador y le conectamos la vista
+        ExpedienteController controlador = new ExpedienteController(vistaExpediente);
+        // 3. Mostramos la ventana en pantalla
+        vistaExpediente.setVisible(true);
     }
 
+    // =========================================================================
+    // NUEVO MÉTODO: ABRIR LA LISTA DE EMPLEADOS
+    // =========================================================================
+    private void abrirListaEmpleados() {
+        // Descomentamos la llamada a tu clase Empleados
+        Empleados lista = new Empleados();
+        lista.setVisible(true);
+    }
     // LÓGICA DE CERRAR SESIÓN
     private void cerrarSesion() {
         int confirmacion = JOptionPane.showConfirmDialog(

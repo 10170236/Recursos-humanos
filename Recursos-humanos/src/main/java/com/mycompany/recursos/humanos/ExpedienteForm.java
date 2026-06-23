@@ -59,15 +59,18 @@ public class ExpedienteForm extends JFrame {
     public ExpedienteForm() {
         super("Portal del Empleado - Expediente Digital");
         initUI();
+        
+        // MODIFICACIÓN: Al abrir la ventana de forma independiente o para un "Nuevo Empleado",
+        // nos aseguramos de que los eventos del botón Guardar queden enlazados al controlador.
+        new ExpedienteController(this);
     }
 
     private void initUI() {
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // Cambiado a DISPOSE para no tumbar la app entera
         setSize(1000, 720);
         setLocationRelativeTo(null);
         setMinimumSize(new Dimension(920, 660));
 
-        // Panel de fondo gris sutil de la app
         JPanel mainContainer = new JPanel(new BorderLayout(0, 0));
         mainContainer.setBackground(new Color(248, 249, 250));
 
@@ -87,7 +90,6 @@ public class ExpedienteForm extends JFrame {
         sGbc.anchor = GridBagConstraints.CENTER;
         sGbc.insets = new Insets(10, 20, 10, 20);
 
-        // Avatar Circular
         panelAvatar = new AvatarPanel();
         JPanel avatarContainer = new JPanel(new FlowLayout(FlowLayout.CENTER));
         avatarContainer.setOpaque(false);
@@ -95,21 +97,18 @@ public class ExpedienteForm extends JFrame {
         sGbc.insets = new Insets(30, 20, 10, 20);
         sidebarPanel.add(avatarContainer, sGbc);
 
-        // Nombre del Empleado
         lblNombreEmpleadoHeader = new JLabel("Nuevo Empleado", SwingConstants.CENTER);
         lblNombreEmpleadoHeader.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblNombreEmpleadoHeader.setForeground(new Color(33, 37, 41));
         sGbc.insets = new Insets(10, 15, 2, 15);
         sidebarPanel.add(lblNombreEmpleadoHeader, sGbc);
 
-        // Puesto del Empleado
         lblPuestoHeader = new JLabel("Puesto no asignado", SwingConstants.CENTER);
         lblPuestoHeader.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         lblPuestoHeader.setForeground(new Color(108, 117, 125));
         sGbc.insets = new Insets(0, 15, 10, 15);
         sidebarPanel.add(lblPuestoHeader, sGbc);
 
-        // Badge de Estado
         badgeEstadoHeader = new StatusBadge();
         JPanel badgeContainer = new JPanel(new FlowLayout(FlowLayout.CENTER));
         badgeContainer.setOpaque(false);
@@ -117,20 +116,17 @@ public class ExpedienteForm extends JFrame {
         sGbc.insets = new Insets(5, 20, 25, 20);
         sidebarPanel.add(badgeContainer, sGbc);
 
-        // Línea Divisora
         JSeparator separator = new JSeparator();
         separator.setForeground(new Color(233, 236, 239));
         sGbc.insets = new Insets(0, 15, 20, 15);
         sidebarPanel.add(separator, sGbc);
 
-        // Título Datos Rápidos
         JLabel lblQuickFacts = new JLabel("INFORMACIÓN RÁPIDA");
         lblQuickFacts.setFont(new Font("Segoe UI", Font.BOLD, 11));
         lblQuickFacts.setForeground(new Color(173, 181, 189));
         sGbc.insets = new Insets(0, 20, 12, 20);
         sidebarPanel.add(lblQuickFacts, sGbc);
 
-        // Panel de Datos Rápidos
         JPanel panelDatosRapidos = new JPanel(new GridLayout(4, 1, 0, 16));
         panelDatosRapidos.setOpaque(false);
 
@@ -147,7 +143,6 @@ public class ExpedienteForm extends JFrame {
         sGbc.insets = new Insets(0, 20, 20, 20);
         sidebarPanel.add(panelDatosRapidos, sGbc);
 
-        // Glue inferior para empujar todo hacia arriba
         sGbc.weighty = 1.0;
         sidebarPanel.add(Box.createVerticalGlue(), sGbc);
 
@@ -160,7 +155,6 @@ public class ExpedienteForm extends JFrame {
         mainWorkPanel.setOpaque(false);
         mainWorkPanel.setBorder(new EmptyBorder(25, 25, 25, 25));
 
-        // Título de la sección principal
         JPanel titlePanel = new JPanel(new BorderLayout());
         titlePanel.setOpaque(false);
         JLabel lblMainTitle = new JLabel("Formulario de Expediente");
@@ -169,7 +163,6 @@ public class ExpedienteForm extends JFrame {
         titlePanel.add(lblMainTitle, BorderLayout.WEST);
         mainWorkPanel.add(titlePanel, BorderLayout.NORTH);
 
-        // Pestañas Subrayadas (Estilo FlatLaf)
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.putClientProperty("JTabbedPane.tabType", "underlined");
         tabbedPane.putClientProperty("JTabbedPane.tabHeight", 45);
@@ -200,6 +193,7 @@ public class ExpedienteForm extends JFrame {
         btnCancelar.putClientProperty("JComponent.minimumWidth", 110);
         btnCancelar.setBackground(Color.WHITE);
         btnCancelar.setForeground(new Color(108, 117, 125));
+        btnCancelar.addActionListener(e -> dispose()); // Acción por defecto para cerrar
 
         btnLimpiar = new JButton("Limpiar");
         btnLimpiar.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -209,7 +203,7 @@ public class ExpedienteForm extends JFrame {
 
         btnGuardar = new JButton("Guardar Expediente");
         btnGuardar.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnGuardar.setBackground(new Color(13, 110, 253)); // Royal Blue
+        btnGuardar.setBackground(new Color(13, 110, 253));
         btnGuardar.setForeground(Color.WHITE);
         btnGuardar.putClientProperty("JButton.buttonType", "roundRect");
         btnGuardar.putClientProperty("JComponent.minimumWidth", 180);
@@ -222,20 +216,12 @@ public class ExpedienteForm extends JFrame {
         mainWorkPanel.add(actionPanel, BorderLayout.SOUTH);
 
         mainContainer.add(mainWorkPanel, BorderLayout.CENTER);
-
         setContentPane(mainContainer);
 
-        // Lógica visual e interactiva
         configurarLogicaVisualReactiva();
         configurarValidacionesVisuales();
 
-        // Acción de limpiar
         btnLimpiar.addActionListener(e -> limpiarFormulario());
-        
-        // ==========================================
-        // CONECTANDO LA INTERFAZ CON EL BACKEND
-        // ==========================================
-        btnGuardar.addActionListener(e -> procesarYGuardarExpediente());
     }
 
     private JPanel crearPanelDatosPersonales() {
@@ -253,7 +239,6 @@ public class ExpedienteForm extends JFrame {
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 0.5;
 
-        // Fila 0: DNI y Nombre Completo
         txtDni = new JTextField();
         txtDni.putClientProperty("JTextField.placeholderText", "Ej. 1-2345-6789");
         txtDni.putClientProperty("JComponent.roundRect", true);
@@ -266,7 +251,6 @@ public class ExpedienteForm extends JFrame {
         gbc.gridx = 1;
         gridPanel.add(crearInputGroup("Nombre Completo", txtNombreCompleto, true), gbc);
 
-        // Fila 1: Fecha Nacimiento y Género
         spinFechaNacimiento = new JSpinner(new SpinnerDateModel());
         spinFechaNacimiento.setEditor(new JSpinner.DateEditor(spinFechaNacimiento, "dd/MM/yyyy"));
         spinFechaNacimiento.putClientProperty("JComponent.roundRect", true);
@@ -278,7 +262,6 @@ public class ExpedienteForm extends JFrame {
         gbc.gridx = 1;
         gridPanel.add(crearInputGroup("Género", comboGenero, false), gbc);
 
-        // Fila 2: Teléfono y Correo
         txtTelefono = new JTextField();
         txtTelefono.putClientProperty("JTextField.placeholderText", "Ej. 8888-8888");
         txtTelefono.putClientProperty("JComponent.roundRect", true);
@@ -291,7 +274,6 @@ public class ExpedienteForm extends JFrame {
         gbc.gridx = 1;
         gridPanel.add(crearInputGroup("Correo Electrónico", txtCorreo, true), gbc);
 
-        // Fila 3: Dirección (Span 2 columnas)
         txtDireccion = new JTextArea(3, 20);
         txtDireccion.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         txtDireccion.setLineWrap(true);
@@ -323,7 +305,6 @@ public class ExpedienteForm extends JFrame {
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 0.5;
 
-        // Fila 0: Puesto y Departamento
         txtPuesto = new JTextField();
         txtPuesto.putClientProperty("JTextField.placeholderText", "Ej. Especialista de TI");
         txtPuesto.putClientProperty("JComponent.roundRect", true);
@@ -337,7 +318,6 @@ public class ExpedienteForm extends JFrame {
         gbc.gridx = 1;
         gridPanel.add(crearInputGroup("Departamento", comboDepartamento, true), gbc);
 
-        // Fila 1: Fecha Ingreso y Salario
         spinFechaIngreso = new JSpinner(new SpinnerDateModel());
         spinFechaIngreso.setEditor(new JSpinner.DateEditor(spinFechaIngreso, "dd/MM/yyyy"));
         spinFechaIngreso.putClientProperty("JComponent.roundRect", true);
@@ -351,7 +331,6 @@ public class ExpedienteForm extends JFrame {
         gbc.gridx = 1;
         gridPanel.add(crearInputGroup("Salario Mensual", txtSalario, true), gbc);
 
-        // Fila 2: Horario y Estado
         comboHorario = new JComboBox<>(new String[]{
             "Matutino (8:00 AM - 5:00 PM)", "Vespertino (1:00 PM - 9:00 PM)", "Nocturno (9:00 PM - 6:00 AM)", "Mixto"
         });
@@ -364,7 +343,6 @@ public class ExpedienteForm extends JFrame {
         gbc.gridx = 1;
         gridPanel.add(crearInputGroup("Estado del Empleado", comboEstado, true), gbc);
 
-        // Espacio vacío para balancear el Grid
         gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
         gbc.weighty = 1.0;
         gridPanel.add(Box.createVerticalGlue(), gbc);
@@ -381,7 +359,6 @@ public class ExpedienteForm extends JFrame {
             BorderFactory.createEmptyBorder(24, 24, 24, 24)
         ));
 
-        // Tabla de documentos
         String[] columnas = {"Nombre del Archivo", "Formato / Tipo", "Fecha de Subida", "Estado de Revisión"};
         modeloTablaDocs = new DefaultTableModel(columnas, 0) {
             @Override
@@ -395,7 +372,7 @@ public class ExpedienteForm extends JFrame {
 
         tablaDocumentos = new JTable(modeloTablaDocs);
         tablaDocumentos.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        tablaDocumentos.setRowHeight(35); // Tabla cómoda
+        tablaDocumentos.setRowHeight(35);
         tablaDocumentos.setShowVerticalLines(false);
         tablaDocumentos.setGridColor(new Color(240, 242, 245));
         tablaDocumentos.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -405,7 +382,6 @@ public class ExpedienteForm extends JFrame {
         scrollTabla.setBorder(BorderFactory.createLineBorder(new Color(230, 235, 242)));
         panel.add(scrollTabla, BorderLayout.CENTER);
 
-        // Acciones
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         panelBotones.setOpaque(false);
 
@@ -425,7 +401,6 @@ public class ExpedienteForm extends JFrame {
         panelBotones.add(btnEliminarDoc);
         panel.add(panelBotones, BorderLayout.SOUTH);
 
-        // Lógica
         btnAdjuntarDoc.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
             int returnVal = fileChooser.showOpenDialog(this);
@@ -447,10 +422,6 @@ public class ExpedienteForm extends JFrame {
 
         return panel;
     }
-
-    // ==========================================
-    // MÉTODOS DE SOPORTE E INTERACTIVIDAD
-    // ==========================================
 
     private JPanel crearInputGroup(String labelText, JComponent inputComponent, boolean esObligatorio) {
         JPanel panel = new JPanel(new BorderLayout(0, 6));
@@ -490,7 +461,6 @@ public class ExpedienteForm extends JFrame {
     }
 
     private void configurarLogicaVisualReactiva() {
-        // Enlace del Nombre Completo (Avatar y Header)
         txtNombreCompleto.getDocument().addDocumentListener(new DocumentListener() {
             private void actualizar() {
                 String text = txtNombreCompleto.getText();
@@ -504,7 +474,6 @@ public class ExpedienteForm extends JFrame {
             @Override public void changedUpdate(DocumentEvent e) { actualizar(); }
         });
 
-        // Enlace del DNI en Sidebar
         txtDni.getDocument().addDocumentListener(new DocumentListener() {
             private void actualizar() {
                 String text = txtDni.getText();
@@ -515,7 +484,6 @@ public class ExpedienteForm extends JFrame {
             @Override public void changedUpdate(DocumentEvent e) { actualizar(); }
         });
 
-        // Enlace del Correo en Sidebar
         txtCorreo.getDocument().addDocumentListener(new DocumentListener() {
             private void actualizar() {
                 String text = txtCorreo.getText();
@@ -526,7 +494,6 @@ public class ExpedienteForm extends JFrame {
             @Override public void changedUpdate(DocumentEvent e) { actualizar(); }
         });
 
-        // Enlace del Teléfono en Sidebar
         txtTelefono.getDocument().addDocumentListener(new DocumentListener() {
             private void actualizar() {
                 String text = txtTelefono.getText();
@@ -537,7 +504,6 @@ public class ExpedienteForm extends JFrame {
             @Override public void changedUpdate(DocumentEvent e) { actualizar(); }
         });
 
-        // Enlace del Puesto en Header
         txtPuesto.getDocument().addDocumentListener(new DocumentListener() {
             private void actualizar() {
                 String text = txtPuesto.getText();
@@ -548,19 +514,16 @@ public class ExpedienteForm extends JFrame {
             @Override public void changedUpdate(DocumentEvent e) { actualizar(); }
         });
 
-        // Enlace del Departamento en Sidebar
         comboDepartamento.addActionListener(e -> {
             String selected = (String) comboDepartamento.getSelectedItem();
             actualizarTextoQuickFact(lblSidebarDept, "Departamento", selected);
         });
 
-        // Enlace de Estado en Header
         comboEstado.addActionListener(e -> {
             String selected = (String) comboEstado.getSelectedItem();
             badgeEstadoHeader.setStatus(selected);
         });
 
-        // Inicializar estados iniciales en el Sidebar
         badgeEstadoHeader.setStatus("Activo");
     }
 
@@ -631,14 +594,12 @@ public class ExpedienteForm extends JFrame {
         comboHorario.setSelectedIndex(0);
         comboEstado.setSelectedIndex(0);
 
-        // Limpiar estilos de error
         txtDni.putClientProperty("JComponent.outline", null);
         txtNombreCompleto.putClientProperty("JComponent.outline", null);
         txtCorreo.putClientProperty("JComponent.outline", null);
         txtPuesto.putClientProperty("JComponent.outline", null);
         txtSalario.putClientProperty("JComponent.outline", null);
 
-        // Restablecer etiquetas Sidebar
         lblNombreEmpleadoHeader.setText("Nuevo Empleado");
         lblPuestoHeader.setText("Puesto no asignado");
         panelAvatar.setInitials("");
@@ -649,74 +610,8 @@ public class ExpedienteForm extends JFrame {
         actualizarTextoQuickFact(lblSidebarCorreo, "Correo", "No registrado");
         actualizarTextoQuickFact(lblSidebarTelefono, "Teléfono", "No registrado");
     }
-    
-    
-    private void procesarYGuardarExpediente() {
-        // 1. Extraemos los datos clave de la pantalla
-        String nombre = txtNombreCompleto.getText().trim();
-        String correo = txtCorreo.getText().trim();
-        String salarioStr = txtSalario.getText().trim();
 
-        // 2. Validación básica para no procesar datos vacíos
-        if (nombre.isEmpty() || correo.isEmpty() || salarioStr.isEmpty()) {
-            JOptionPane.showMessageDialog(this, 
-                "Por favor, completa los campos obligatorios (Nombre, Correo, Salario) antes de guardar.", 
-                "Faltan Datos", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        try {
-            // Cambiamos el cursor a "Cargando"
-            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-
-            double salarioBaseMensual = Double.parseDouble(salarioStr);
-
-            // ==========================================
-            // INTEGRACIÓN DE LAS PIEZAS DEL SISTEMA
-            // ==========================================
-            
-            // A. Motor Matemático y Nómina: Simulamos 160 horas mensuales para sacar el pago por hora
-            double pagoPorHora = salarioBaseMensual / 160.0; 
-            double salarioNeto = ProcesadorNomina.obtenerSalarioNeto(160.0, pagoPorHora);
-
-            // B. Generador de Documentos (PDF)
-            GeneradorPDF generadorPDF = new GeneradorPDF();
-            String rutaPDF = generadorPDF.crearBoleta(nombre, salarioNeto);
-
-            // C. Gestor de Correos (Lo enviamos en segundo plano para que la ventana no se trabe)
-            EnviadorCorreo enviador = new EnviadorCorreo();
-            new Thread(() -> {
-                try {
-                    enviador.enviar(correo, nombre, rutaPDF);
-                    
-                    // Si todo salió bien, mostramos mensaje de éxito y limpiamos
-                    SwingUtilities.invokeLater(() -> {
-                        setCursor(Cursor.getDefaultCursor());
-                        JOptionPane.showMessageDialog(this, 
-                            "¡Expediente guardado con éxito!\nLa boleta ha sido enviada a: " + correo, 
-                            "Operación Exitosa", JOptionPane.INFORMATION_MESSAGE);
-                        limpiarFormulario();
-                    });
-                } catch (Exception ex) {
-                    SwingUtilities.invokeLater(() -> {
-                        setCursor(Cursor.getDefaultCursor());
-                        JOptionPane.showMessageDialog(this, 
-                            "Se guardó el expediente pero hubo un error al enviar el correo.\nRevisa tu conexión o credenciales.", 
-                            "Aviso", JOptionPane.WARNING_MESSAGE);
-                    });
-                }
-            }).start();
-
-        } catch (NumberFormatException ex) {
-            setCursor(Cursor.getDefaultCursor());
-            JOptionPane.showMessageDialog(this, 
-                "El salario ingresado no es válido. Usa solo números y puntos decimales.", 
-                "Error de Formato", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    // --- Getters y Setters de los componentes para interacción con Controladores (Regla de Oro) ---
-    
+    // --- Getters ---
     public JTextField getTxtDni() { return txtDni; }
     public JTextField getTxtNombreCompleto() { return txtNombreCompleto; }
     public JTextField getTxtTelefono() { return txtTelefono; }
@@ -737,6 +632,7 @@ public class ExpedienteForm extends JFrame {
     public JButton getBtnGuardar() { return btnGuardar; }
     public JButton getBtnCancelar() { return btnCancelar; }
 }
+
 /**
  * Avatar circular dinámico que renderiza las iniciales de una persona.
  */
@@ -774,54 +670,51 @@ class AvatarPanel extends JPanel {
 
         int w = getWidth();
         int h = getHeight();
-        
-        // Fondo degradado circular
+
         GradientPaint gp = new GradientPaint(0, 0, startColor, w, h, endColor);
         g2.setPaint(gp);
-        g2.fillOval(0, 0, w, h);
+        g2.fillOval(0, 0, w - 1, h - 1);
 
-        // Texto de iniciales
         g2.setColor(Color.WHITE);
-        g2.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        g2.setFont(new Font("Segoe UI", Font.BOLD, 26));
         FontMetrics fm = g2.getFontMetrics();
-        int x = (w - fm.stringWidth(initials)) / 2;
-        int y = ((h - fm.getHeight()) / 2) + fm.getAscent();
-        g2.drawString(initials, x, y);
+        int textW = fm.stringWidth(initials);
+        int textH = fm.getAscent();
+
+        g2.drawString(initials, (w - textW) / 2, (h + textH) / 2 - 4);
         g2.dispose();
     }
 }
 
 /**
- * Etiqueta de estado visual (StatusBadge) con forma de píldora y punto indicador.
+ * Badge redondeado moderno para representar el estado del empleado.
  */
 class StatusBadge extends JPanel {
-    private Color bgColor;
-    private Color dotColor;
-    private Color textColor;
-    private String text = "ACTIVO";
+    private String text = "Activo";
+    private Color dotColor = new Color(46, 204, 113);
+    private Color bgColor = new Color(46, 204, 113, 30);
+    private Color textColor = new Color(30, 130, 76);
 
     public StatusBadge() {
         setOpaque(false);
-        setStatus("Activo"); // Estado por defecto
     }
 
     public void setStatus(String status) {
-        this.text = status.toUpperCase();
-        if ("ACTIVO".equals(this.text)) {
-            bgColor = new Color(209, 231, 221); // Verde claro
-            dotColor = new Color(25, 135, 84);  // Verde vibrante
-            textColor = new Color(15, 81, 50);  // Verde oscuro
-        } else if ("INACTIVO".equals(this.text)) {
-            bgColor = new Color(248, 215, 218); // Rojo claro
-            dotColor = new Color(220, 53, 69);  // Rojo vibrante
-            textColor = new Color(132, 32, 41); // Rojo oscuro
-        } else { // Licencia / Otro
-            bgColor = new Color(255, 243, 205); // Amarillo claro
-            dotColor = new Color(255, 193, 7);  // Amarillo vibrante
-            textColor = new Color(102, 77, 3);  // Amarillo oscuro
+        this.text = (status == null || "Seleccionar...".equalsIgnoreCase(status)) ? "Activo" : status;
+        if ("Activo".equalsIgnoreCase(this.text)) {
+            dotColor = new Color(46, 204, 113);
+            bgColor = new Color(46, 204, 113, 35);
+            textColor = new Color(30, 130, 76);
+        } else if ("Inactivo".equalsIgnoreCase(this.text)) {
+            dotColor = new Color(231, 76, 60);
+            bgColor = new Color(231, 76, 60, 35);
+            textColor = new Color(150, 40, 27);
+        } else { // Licencia
+            dotColor = new Color(241, 196, 15);
+            bgColor = new Color(241, 196, 15, 35);
+            textColor = new Color(180, 120, 10);
         }
         repaint();
-        revalidate();
     }
 
     @Override
@@ -833,15 +726,12 @@ class StatusBadge extends JPanel {
         int w = getWidth();
         int h = getHeight();
 
-        // Fondo de píldora redondeada
         g2.setColor(bgColor);
         g2.fillRoundRect(0, 0, w - 1, h - 1, h, h);
 
-        // Círculo indicador de estado
         g2.setColor(dotColor);
         g2.fillOval(10, (h - 8) / 2, 8, 8);
 
-        // Texto del estado
         g2.setColor(textColor);
         g2.setFont(new Font("Segoe UI", Font.BOLD, 12));
         FontMetrics fm = g2.getFontMetrics();

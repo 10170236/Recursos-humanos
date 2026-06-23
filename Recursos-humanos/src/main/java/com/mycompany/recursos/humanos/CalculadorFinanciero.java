@@ -3,19 +3,18 @@
  */
 
 package com.mycompany.recursos.humanos;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+
 /**
- *
- * @author Zavaleta
+ * Motor de cálculos financieros.
+ * Utiliza BigDecimal para evitar pérdida de centavos en la nómina masiva.
  */
 public class CalculadorFinanciero {
 
-    public static double redondear(double monto) {
-        // Convertimos el double a BigDecimal para máxima precisión
-        BigDecimal bd = new BigDecimal(Double.toString(monto));
-        // Aplicamos 2 decimales y el redondeo bancario
-        bd = bd.setScale(2, RoundingMode.HALF_EVEN);
-        return bd.doubleValue();
+    public static BigDecimal redondear(BigDecimal monto) {
+        // Aplica exactamente 2 decimales y el redondeo bancario exigido
+        return monto.setScale(2, RoundingMode.HALF_EVEN);
     }
 }

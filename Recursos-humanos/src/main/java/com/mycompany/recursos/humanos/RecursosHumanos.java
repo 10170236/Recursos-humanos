@@ -15,7 +15,7 @@ public class RecursosHumanos {
         
         // Ejecutar el formulario en el Event Dispatch Thread (EDT)
         SwingUtilities.invokeLater(() -> {
-            new ExpedienteForm().setVisible(true);
+            new Inicio().setVisible(true);
         });
     }
 }

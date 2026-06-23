@@ -4,9 +4,11 @@ com\mycompany\recursos\humanos\ExpedienteForm$1.class
 com\mycompany\recursos\humanos\ExpedienteForm$6.class
 com\mycompany\recursos\humanos\ExpedienteForm$11.class
 com\mycompany\recursos\humanos\ExpedienteForm$8.class
+com\mycompany\recursos\humanos\ExpedienteController.class
 com\mycompany\recursos\humanos\Empleados$1.class
 com\mycompany\recursos\humanos\Menu$1.class
 com\mycompany\recursos\humanos\AvatarPanel.class
+com\mycompany\recursos\humanos\ExpedienteController$1.class
 com\mycompany\recursos\humanos\ProcesadorNomina.class
 com\mycompany\recursos\humanos\ServicioPlanilla.class
 com\mycompany\recursos\humanos\ExpedienteForm$4.class

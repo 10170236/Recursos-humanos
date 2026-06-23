@@ -7,6 +7,11 @@ import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+// IMPORTS PARA LA CONEXIÓN A LA BASE DE DATOS
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 /**
  * Pantalla de Lista de Empleados.
@@ -27,9 +32,9 @@ public class Empleados extends JFrame {
     }
 
     private void initUI() {
-        // DISPOSE_ON_CLOSE es vital aquí para que al cerrar esta ventana no se cierre todo el sistema
+        // DISPOSE_ON_CLOSE evita que al cerrar esta ventana se cierre todo el sistema
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); 
-        setSize(900, 600);
+        setSize(1000, 600);
         setLocationRelativeTo(null);
         
         JPanel mainPanel = new JPanel(new BorderLayout(20, 20));
@@ -62,11 +67,11 @@ public class Empleados extends JFrame {
         // ==========================================
         // 2. TABLA DE EMPLEADOS
         // ==========================================
-        String[] columnas = {"ID", "DUI", "Nombre Completo", "Cargo", "Salario Base", "Estado"};
+        String[] columnas = {"ID", "DUI / DNI", "Nombre Completo", "Puesto / Cargo", "Salario Base", "Estado"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false; // Evita que editen la tabla directamente dando doble clic en la celda
+                return false; // Evita edición directa en celdas
             }
         };
 
@@ -76,7 +81,6 @@ public class Empleados extends JFrame {
         tablaEmpleados.setSelectionBackground(new Color(220, 235, 255));
         tablaEmpleados.setSelectionForeground(azulNavy);
         
-        // Estilo del encabezado de la tabla
         JTableHeader header = tablaEmpleados.getTableHeader();
         header.setFont(new Font("Segoe UI", Font.BOLD, 14));
         header.setBackground(azulNavy);
@@ -91,7 +95,6 @@ public class Empleados extends JFrame {
         // 3. EVENTOS (Doble Clic y Botones)
         // ==========================================
         
-        // Lógica: Doble clic en una fila de la tabla
         tablaEmpleados.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent evt) {
@@ -101,7 +104,6 @@ public class Empleados extends JFrame {
             }
         });
 
-        // Lógica: Botón Ver Expediente
         btnVer.addActionListener(e -> {
             if (tablaEmpleados.getSelectedRow() == -1) {
                 JOptionPane.showMessageDialog(this, "Seleccione un empleado de la lista primero.", "Aviso", JOptionPane.WARNING_MESSAGE);
@@ -110,17 +112,14 @@ public class Empleados extends JFrame {
             }
         });
 
-        // Lógica: Botón Nuevo Empleado
         btnNuevo.addActionListener(e -> {
-            // Abre el formulario en blanco
-            ExpedienteForm nuevoForm = new ExpedienteForm();
-            nuevoForm.setVisible(true);
+            ExpedienteForm vistaExpediente = new ExpedienteForm();
+            ExpedienteController controlador = new ExpedienteController(vistaExpediente);
+            vistaExpediente.setVisible(true);
         });
 
         setContentPane(mainPanel);
-        
-        // Cargar algunos datos de prueba simulados
-        cargarDatosDePrueba();
+        cargarDatosDesdeBaseDeDatos();
     }
 
     private JButton crearBoton(String texto, Color colorFondo) {
@@ -135,25 +134,60 @@ public class Empleados extends JFrame {
         return btn;
     }
 
+    // =========================================================================
+    // CAMBIO PRINCIPAL: CONEXIÓN MEDIANTE MVC PASANDO EL ID SELECCIONADO
+    // =========================================================================
     private void abrirExpedienteSeleccionado() {
         int fila = tablaEmpleados.getSelectedRow();
-        String nombre = modeloTabla.getValueAt(fila, 2).toString();
+        if (fila == -1) return; 
         
-        // Aquí conectamos con tu ExpedienteForm
-        // Nota: Por ahora solo abrimos el formulario. Más adelante le pasaremos los datos para que se llenen solos.
-        JOptionPane.showMessageDialog(this, "Abriendo expediente de: " + nombre);
+        // Capturamos el ID real de la fila de la tabla
+        String idEmpleado = modeloTabla.getValueAt(fila, 0).toString();
         
-        ExpedienteForm form = new ExpedienteForm();
-        form.setVisible(true);
+        // 1. Instanciamos la Vista del Expediente
+        ExpedienteForm vistaForm = new ExpedienteForm();
+        
+        // 2. Instanciamos el Controlador asignándole su vista
+        ExpedienteController controlador = new ExpedienteController(vistaForm);
+        
+        // 3. Le ordenamos al controlador buscar este ID en la BD y llenar los campos
+        controlador.cargarDatosEmpleado(idEmpleado);
+        
+        // 4. Hacemos visible la ventana ya procesada y rellena
+        vistaForm.setVisible(true);
     }
 
-    private void cargarDatosDePrueba() {
-        modeloTabla.addRow(new Object[]{"1", "01234567-8", "Carlos Martínez", "Desarrollador Java", "$1,200.00", "Activo"});
-        modeloTabla.addRow(new Object[]{"2", "08765432-1", "Ana Gómez", "Analista RRHH", "$850.00", "Activo"});
-        modeloTabla.addRow(new Object[]{"3", "05554443-2", "Luis Pineda", "Gerente IT", "$2,500.00", "Activo"});
+    private void cargarDatosDesdeBaseDeDatos() {
+        modeloTabla.setRowCount(0);
+        String sql = "SELECT id_empleado, dni, nombre_completo, puesto, salario, estado FROM empleados";
+
+        try (Connection conn = Conexion.obtenerConexion();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                String id = rs.getString("id_empleado");
+                String dni = rs.getString("dni"); 
+                String nombre = rs.getString("nombre_completo");
+                String puesto = rs.getString("puesto");
+                double salario = rs.getDouble("salario"); 
+                String estadoStr = rs.getString("estado"); 
+
+                modeloTabla.addRow(new Object[]{
+                    id, 
+                    dni, 
+                    nombre, 
+                    (puesto == null || puesto.isEmpty()) ? "No Asignado" : puesto, 
+                    "$" + String.format(java.util.Locale.US, "%,.2f", salario), 
+                    estadoStr
+                });
+            }
+
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error al cargar la lista de empleados:\n" + ex.getMessage(), "Error SQL", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
-    // Método main solo para probar esta pantalla individualmente si lo necesitas
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             new Empleados().setVisible(true);
