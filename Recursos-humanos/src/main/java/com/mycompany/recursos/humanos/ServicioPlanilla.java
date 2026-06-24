@@ -9,23 +9,20 @@ import java.sql.Date;
 
 /**
  * Motor Central de Nómina (El Corazón del Sistema).
- * Ejecuta el cierre masivo de pagos bajo estricto cumplimiento ACID de base de datos.
+ * Contiene tanto el cierre tradicional como el cierre por reloj biométrico.
  */
 public class ServicioPlanilla {
 
-    /**
-     * Ejecuta el cierre mensual de la nómina para todos los empleados activos.
-     * Si ocurre un solo error, revierte los cambios para asegurar integridad financiera.
-     */
+    // =========================================================================
+    // MÉTODO 1: Procesamiento Tradicional
+    // =========================================================================
     public static boolean procesarCierreNominaMasivo(Date fechaInicio, Date fechaFin, Date fechaPago) {
-        String sqlEmpleados = "SELECT id_empleado, nombre_completo, salario_base FROM empleados WHERE estado = '1' OR estado = 'Activo'";
+        String sqlEmpleados = "SELECT id_empleado, nombre_completo, salario FROM empleados WHERE estado = '1' OR estado = 'Activo'";
         String sqlInsertPago = "INSERT INTO pagos_nomina (id_empleado, fecha_pago, total_ingresos, total_deducciones, salario_neto) VALUES (?, ?, ?, ?, ?)";
         
         Connection con = null;
-        
         try {
             con = Conexion.obtenerConexion();
-            // ACTIVACIÓN DE ACID: Quitamos el autocommit para controlar manualmente la transacción
             con.setAutoCommit(false); 
             
             try (PreparedStatement psEmp = con.prepareStatement(sqlEmpleados);
@@ -33,74 +30,143 @@ public class ServicioPlanilla {
                  PreparedStatement psInsert = con.prepareStatement(sqlInsertPago)) {
                  
                 int procesados = 0;
-                
                 while (rsEmp.next()) {
                     int idEmpleado = rsEmp.getInt("id_empleado");
-                    String nombre = rsEmp.getString("nombre_completo");
-                    BigDecimal salarioBase = rsEmp.getBigDecimal("salario_base").setScale(2, RoundingMode.HALF_EVEN);
+                    BigDecimal salarioBase = rsEmp.getBigDecimal("salario").setScale(2, RoundingMode.HALF_EVEN);
                     
-                    // 1. Invocar al motor de tiempos para consolidar incidencias reales del periodo
                     ControlHoras.ReporteIncidencias incidencias = ControlHoras.procesarIncidenciasPeriodo(idEmpleado, fechaInicio, fechaFin, con);
                     
-                    // 2. Calcular montos financieros con el módulo de precisión matemática
                     BigDecimal ingresosHorasExtras = CalculadorFinanciero.calcularPagoHorasExtras(salarioBase, incidencias.totalHorasExtras);
                     BigDecimal descuentoTardanzas = CalculadorFinanciero.calcularDescuentoTardanza(salarioBase, incidencias.totalMinutosTardanza);
                     
-                    // Fórmula de Ingresos: Salario Base + Horas Extras (Bonos omitidos por defecto o expandibles)
                     BigDecimal totalIngresos = salarioBase.add(ingresosHorasExtras).setScale(2, RoundingMode.HALF_EVEN);
                     
-                    // 3. Cargar retenciones dinámicas directo desde la BD sin quemar lógica en Java
                     BigDecimal descuentoISSS = CalculadorFinanciero.calcularRetencionLey(totalIngresos, "ISSS", con);
                     BigDecimal descuentoAFP = CalculadorFinanciero.calcularRetencionLey(totalIngresos, "AFP", con);
                     BigDecimal descuentoRenta = CalculadorFinanciero.calcularRetencionLey(totalIngresos, "Renta", con);
                     
-                    // Sumatoria de deducciones legales + penalizaciones por asistencia
                     BigDecimal totalDeducciones = descuentoISSS.add(descuentoAFP).add(descuentoRenta).add(descuentoTardanzas).setScale(2, RoundingMode.HALF_EVEN);
-                    
-                    // Aplicación rigurosa de la Ecuación del Arquitecto: Salario Neto = Ingresos - Deducciones
                     BigDecimal salarioNeto = totalIngresos.subtract(totalDeducciones).setScale(2, RoundingMode.HALF_EVEN);
                     
-                    // 4. Setear los parámetros en el lote de guardado masivo
                     psInsert.setInt(1, idEmpleado);
                     psInsert.setDate(2, fechaPago);
                     psInsert.setBigDecimal(3, totalIngresos);
                     psInsert.setBigDecimal(4, totalDeducciones);
                     psInsert.setBigDecimal(5, salarioNeto);
-                    psInsert.addBatch(); // Empaqueta para alta velocidad de ejecución (Menos de 10 seg)
+                    psInsert.addBatch(); 
                     
                     procesados++;
                 }
                 
-                // Ejecución por lotes en el servidor de base de datos
                 if (procesados > 0) {
                     psInsert.executeBatch();
                 }
                 
-                // SI TODO FUE EXITOSO: Guardamos los cambios permanentemente de forma atómica
                 con.commit();
-                System.out.println("🚀 Cierre transaccional de nómina exitoso para " + procesados + " empleados.");
                 return true;
             }
             
         } catch (Exception e) {
-            // DETECCIÓN DE ANOMALÍAS: Si falla aunque sea en un registro, se ejecuta un rollback total
-            System.err.println("🚨 Falla detectada en la transacción masiva. Ejecutando Rollback de emergencia...");
+            System.err.println("🚨 Error en método masivo tradicional: " + e.getMessage());
             if (con != null) {
-                try {
-                    con.rollback(); 
-                } catch (Exception ex) {
-                    System.err.println("Error crítico al revertir la transacción: " + ex.getMessage());
-                }
+                try { con.rollback(); } catch (Exception ex) { }
             }
             return false;
         } finally {
             if (con != null) {
-                try {
-                    con.setAutoCommit(true); // Restauramos el comportamiento estándar
-                    con.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
+                try { con.setAutoCommit(true); con.close(); } catch (Exception e) { }
+            }
+        }
+    }
+
+    // =========================================================================
+    // 🟢 MÉTODO 2 OPTIMIZADO: Sincronizado con el Reloj y Parámetros Dinámicos
+    // =========================================================================
+    public static boolean procesarCierreNominaPorReloj(Date fechaInicio, Date fechaFin, Date fechaPago) {
+        String sqlEmpleados = "SELECT id_empleado, salario FROM empleados WHERE estado = '1' OR estado = 'Activo'";
+        String sqlInsertNomina = "INSERT INTO pagos_nomina (id_empleado, fecha_pago, total_ingresos, total_deducciones, salario_neto) VALUES (?, ?, ?, ?, ?)";
+        String sqlLeyes = "SELECT porcentaje_descuento FROM parametros_ley WHERE estado = true";
+
+        Connection con = null;
+        try {
+            con = Conexion.obtenerConexion();
+            con.setAutoCommit(false); 
+
+            try (PreparedStatement psEmp = con.prepareStatement(sqlEmpleados);
+                 ResultSet rsEmp = psEmp.executeQuery();
+                 PreparedStatement psInsert = con.prepareStatement(sqlInsertNomina);
+                 PreparedStatement psLeyes = con.prepareStatement(sqlLeyes)) {
+                 
+                int procesados = 0;
+
+                while (rsEmp.next()) {
+                    int idEmpleado = rsEmp.getInt("id_empleado");
+                    BigDecimal salarioBase = rsEmp.getBigDecimal("salario").setScale(2, RoundingMode.HALF_EVEN);
+
+                    // 1. Conexión directa con el Reloj Biométrico dinámico
+                    ControlHoras.ReporteIncidencias incidencias = ControlHoras.procesarIncidenciasPeriodo(idEmpleado, fechaInicio, fechaFin, con);
+
+                    // 2. Ecuación Financiera de precisión (Jornada base mensual = 240 horas)
+                    BigDecimal pagoPorHora = salarioBase.divide(new BigDecimal("240"), 4, RoundingMode.HALF_EVEN);
+
+                    // [Horas Extras con recargo del 1.5]
+                    BigDecimal pagoHorasExtras = BigDecimal.valueOf(incidencias.totalHorasExtras)
+                            .multiply(pagoPorHora)
+                            .multiply(new BigDecimal("1.5"))
+                            .setScale(2, RoundingMode.HALF_EVEN);
+
+                    // [Descuento por Tardanza convertido de minutos a valor monetario]
+                    BigDecimal deduccionTardanza = BigDecimal.valueOf(incidencias.totalMinutosTardanza)
+                            .divide(new BigDecimal("60"), 4, RoundingMode.HALF_EVEN)
+                            .multiply(pagoPorHora)
+                            .setScale(2, RoundingMode.HALF_EVEN);
+
+                    // Bruto acumulado para la base imponible
+                    BigDecimal totalIngresos = salarioBase.add(pagoHorasExtras).setScale(2, RoundingMode.HALF_EVEN);
+
+                    // 3. Deducción Dinámica de Impuestos de Ley de la Base de Datos
+                    BigDecimal totalDeduccionesLey = BigDecimal.ZERO;
+                    try (ResultSet rsLeyes = psLeyes.executeQuery()) {
+                        while (rsLeyes.next()) {
+                            BigDecimal porcentaje = rsLeyes.getBigDecimal("porcentaje_descuento");
+                            BigDecimal deduccion = totalIngresos.multiply(porcentaje).setScale(2, RoundingMode.HALF_EVEN);
+                            totalDeduccionesLey = totalDeduccionesLey.add(deduccion);
+                        }
+                    }
+
+                    // 4. Consolidación de la ecuación del Arquitecto
+                    BigDecimal totalDeducciones = totalDeduccionesLey.add(deduccionTardanza).setScale(2, RoundingMode.HALF_EVEN);
+                    BigDecimal salarioNeto = totalIngresos.subtract(totalDeducciones).setScale(2, RoundingMode.HALF_EVEN);
+
+                    // 5. Inyección al lote transaccional
+                    psInsert.setInt(1, idEmpleado);
+                    psInsert.setDate(2, fechaPago);
+                    psInsert.setBigDecimal(3, totalIngresos);
+                    psInsert.setBigDecimal(4, totalDeducciones);
+                    psInsert.setBigDecimal(5, salarioNeto);
+                    psInsert.addBatch();
+
+                    procesados++;
                 }
+
+                // Si hay empleados procesados, se ejecuta la transacción en bloque de forma ultra rápida
+                if (procesados > 0) {
+                    psInsert.executeBatch();
+                }
+
+                con.commit(); 
+                return true;
+            }
+
+        } catch (Exception e) {
+            System.err.println("🚨 Error crítico al cerrar nómina por asistencia: " + e.getMessage());
+            if (con != null) {
+                try { con.rollback(); } catch (Exception ex) { ex.printStackTrace(); }
+            }
+            return false;
+        } finally {
+            if (con != null) {
+                try { con.setAutoCommit(true); con.close(); } catch (Exception ex) { ex.printStackTrace(); }
             }
         }
     }

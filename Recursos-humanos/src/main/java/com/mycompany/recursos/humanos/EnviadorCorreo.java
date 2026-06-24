@@ -9,7 +9,7 @@ public class EnviadorCorreo {
     
     // Recuerda usar tu correo y una NUEVA contraseña de aplicación
     private final String remitente = "carolinavargas54321@gmail.com"; 
-    private final String password = "contraseñadevrificaxionendospasosxdddd"; 
+    private final String password = "ixgj ynvy dskm krhe"; 
 
     public void enviar(String destino, String empleado, String rutaPDF) {
         Properties props = new Properties();

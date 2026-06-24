@@ -3,13 +3,16 @@ package com.mycompany.recursos.humanos;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 /**
  * Dashboard Principal: Centro de Navegación del Sistema.
- * Incluye control de accesos por Rol y funcionalidad de Cerrar Sesión.
+ * Incluye control de accesos por Rol y estadísticas dinámicas.
  */
 public class Menu extends JFrame {
 
@@ -18,19 +21,23 @@ public class Menu extends JFrame {
     private final Color blancoFondo = new Color(248, 249, 250);
     private final Color grisTexto = new Color(108, 117, 125);
     
-    private String rolUsuario; // Guarda el rol del usuario conectado
-    private JPanel contentArea; // Se saca como variable de clase para intercambio dinámico si es necesario
+    private String rolUsuario; 
+    private JPanel contentArea; 
 
-    // Constructor predeterminado (por si se ejecuta directo)
+    // 🆕 Etiquetas dinámicas para las estadísticas
+    private JLabel lblTotalEmpleados;
+    private JLabel lblAsistenciasHoy;
+    private JLabel lblPlanillaMensual;
+
     public Menu() {
         this("Gerente_RRHH"); 
     }
 
-    // Constructor principal que recibe el rol desde el Login (Inicio.java)
     public Menu(String rol) {
         super("Portal Corporativo - Recursos Humanos");
         this.rolUsuario = rol;
         initUI();
+        cargarEstadisticasReales(); // 🔌 Inicia la carga de datos al abrir el menú
     }
 
     private void initUI() {
@@ -63,44 +70,34 @@ public class Menu extends JFrame {
 
         gbc.insets = new Insets(5, 10, 5, 10);
         
-        // Botones del Menú
         sidebar.add(crearBotonMenu("Dashboard", "fa-home"), gbc);
         
-        // 1. Lista General de Empleados
         JButton btnListaEmpleados = crearBotonMenu("Empleados", "fa-users");
         btnListaEmpleados.addActionListener(e -> abrirListaEmpleados());
         sidebar.add(btnListaEmpleados, gbc);
         
-        // 2. Agregar Nuevo Empleado
         JButton btnNuevoEmpleado = crearBotonMenu("Agregar Nuevo Empleado", "fa-user-plus");
         btnNuevoEmpleado.addActionListener(e -> abrirExpediente());
         sidebar.add(btnNuevoEmpleado, gbc);
 
-        // 3. Reloj Marcador
         JButton btnRelojMarcador = crearBotonMenu("Reloj Marcador", "fa-clock");
         btnRelojMarcador.addActionListener(e -> abrirRelojMarcador());
         sidebar.add(btnRelojMarcador, gbc);
         
-        // =========================================================================
-        // 🔌 MODIFICACIÓN: CONEXIÓN DEL MÓDULO VISUAL DE PLANILLAS
-        // =========================================================================
         JButton btnPlanillas = crearBotonMenu("Planillas", "fa-file-invoice-dollar");
         if (rolUsuario.equalsIgnoreCase("Supervisor")) {
-            btnPlanillas.setEnabled(false); // Deshabilitar si es supervisor
+            btnPlanillas.setEnabled(false); 
             btnPlanillas.setToolTipText("Acceso denegado: Solo disponible para Gerente de RRHH.");
         } else {
-            // Solo conectamos la vista si tiene privilegios de Gerente_RRHH o Admin
             btnPlanillas.addActionListener(e -> abrirPlanillas());
         }
         sidebar.add(btnPlanillas, gbc);
         
-        // Pegar el botón de cerrar sesión en la parte inferior
         gbc.weighty = 1.0;
         sidebar.add(Box.createVerticalGlue(), gbc);
         gbc.weighty = 0;
         gbc.insets = new Insets(10, 10, 30, 10);
         
-        // FUNCIONALIDAD DE CERRAR SESIÓN
         JButton btnCerrarSesion = crearBotonMenu("Cerrar Sesión", "fa-sign-out-alt");
         btnCerrarSesion.addActionListener(e -> cerrarSesion());
         sidebar.add(btnCerrarSesion, gbc);
@@ -117,16 +114,13 @@ public class Menu extends JFrame {
         JPanel topContentPanel = new JPanel(new BorderLayout());
         topContentPanel.setOpaque(false);
 
-        // Header del Dashboard
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
         
-        // Mensaje de bienvenida dinámico según el rol
         JLabel lblBienvenida = new JLabel("Bienvenido, " + rolUsuario.replace("_", " "));
         lblBienvenida.setFont(new Font("Segoe UI", Font.BOLD, 28));
         lblBienvenida.setForeground(azulNavy);
         
-        // Formato de Fecha
         String patronFecha = "EEEE, dd 'de' MMMM 'de' yyyy";
         String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern(patronFecha, new Locale("es", "ES")));
         fecha = fecha.substring(0, 1).toUpperCase() + fecha.substring(1);
@@ -138,14 +132,22 @@ public class Menu extends JFrame {
         header.add(lblFecha, BorderLayout.SOUTH);
         topContentPanel.add(header, BorderLayout.NORTH);
 
-        // Panel de Estadísticas (Tarjetas Rápidas)
+        // ==========================================
+        // 3. TARJETAS DE ESTADÍSTICAS DINÁMICAS
+        // ==========================================
         JPanel statsPanel = new JPanel(new GridLayout(1, 3, 20, 0));
         statsPanel.setOpaque(false);
         statsPanel.setBorder(new EmptyBorder(30, 0, 30, 0));
 
-        statsPanel.add(crearTarjetaStat("Empleados Totales", "24", azulRoyal));
-        statsPanel.add(crearTarjetaStat("Asistencias Hoy", "18", new Color(25, 135, 84)));
-        statsPanel.add(crearTarjetaStat("Planilla Mensual", "$12,450.00", azulNavy));
+        // Inicializamos las etiquetas con texto temporal
+        lblTotalEmpleados = new JLabel("...");
+        lblAsistenciasHoy = new JLabel("...");
+        lblPlanillaMensual = new JLabel("...");
+
+        // Pasamos las etiquetas al generador de tarjetas
+        statsPanel.add(crearTarjetaStat("Empleados Totales", lblTotalEmpleados, azulRoyal));
+        statsPanel.add(crearTarjetaStat("Asistencias Hoy", lblAsistenciasHoy, new Color(25, 135, 84)));
+        statsPanel.add(crearTarjetaStat("Planilla Mensual", lblPlanillaMensual, azulNavy));
 
         topContentPanel.add(statsPanel, BorderLayout.CENTER);
         contentArea.add(topContentPanel, BorderLayout.NORTH);
@@ -154,6 +156,60 @@ public class Menu extends JFrame {
         setContentPane(mainPanel);
     }
 
+    // 🔌 MÉTODO PARA CONSULTAR LA BASE DE DATOS EN SEGUNDO PLANO
+   private void cargarEstadisticasReales() {
+    new Thread(() -> {
+        System.out.println("🔄 [Dashboard] Iniciando carga de datos reales...");
+        
+        String sqlEmpleados = "SELECT COUNT(*) AS total FROM empleados WHERE estado = '1' OR estado = 'Activo'";
+        String sqlAsistencias = "SELECT COUNT(DISTINCT id_empleado) AS asisten FROM marcaciones WHERE DATE(fecha_hora_entrada) = CURDATE()";
+        String sqlPlanilla = "SELECT COALESCE(SUM(salario_neto), 0) AS total_mes FROM pagos_nomina WHERE MONTH(fecha_pago) = MONTH(CURDATE()) AND YEAR(fecha_pago) = YEAR(CURDATE())";
+
+        int totalEmpleados = 0;
+        int asistenciasHoy = 0;
+        double planillaMensual = 0.0;
+
+        try (Connection con = Conexion.obtenerConexion()) {
+            System.out.println("✅ [Dashboard] ¡Conexión exitosa a la Base de Datos!");
+
+            // 1. Total de Empleados
+            try (PreparedStatement ps = con.prepareStatement(sqlEmpleados); ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) totalEmpleados = rs.getInt("total");
+                System.out.println("📊 [Dashboard] Empleados activos encontrados: " + totalEmpleados);
+            }
+            
+            // 2. Asistencias Hoy
+            try (PreparedStatement ps = con.prepareStatement(sqlAsistencias); ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) asistenciasHoy = rs.getInt("asisten");
+                System.out.println("📊 [Dashboard] Asistencias encontradas hoy: " + asistenciasHoy);
+            }
+            
+            // 3. Planilla Mensual
+            try (PreparedStatement ps = con.prepareStatement(sqlPlanilla); ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) planillaMensual = rs.getDouble("total_mes");
+                System.out.println("📊 [Dashboard] Total dinero planilla del mes: " + planillaMensual);
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ [Dashboard] ERROR CRÍTICO Al consultar estadísticas:");
+            e.printStackTrace(); // Esto pintará el error en letras rojas en la consola de NetBeans
+        }
+
+        // Variables finales para pasarlas de forma segura a la UI
+        final String emp = String.valueOf(totalEmpleados);
+        final String asis = String.valueOf(asistenciasHoy);
+        final String plan = String.format(Locale.US, "$%,.2f", planillaMensual);
+
+        // Actualizar la pantalla
+        SwingUtilities.invokeLater(() -> {
+            lblTotalEmpleados.setText(emp);
+            lblAsistenciasHoy.setText(asis);
+            lblPlanillaMensual.setText(plan);
+            System.out.println("✨ [Dashboard] Etiquetas de la interfaz gráfica actualizadas.");
+        });
+        
+    }).start();
+}
     private JButton crearBotonMenu(String texto, String icon) {
         JButton btn = new JButton(texto);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
@@ -183,7 +239,8 @@ public class Menu extends JFrame {
         return btn;
     }
 
-    private JPanel crearTarjetaStat(String titulo, String valor, Color colorAccent) {
+    // 🔌 AHORA RECIBE DIRECTAMENTE EL JLable EN LUGAR DE UN STRING
+    private JPanel crearTarjetaStat(String titulo, JLabel lblValue, Color colorAccent) {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBackground(Color.WHITE);
@@ -197,7 +254,6 @@ public class Menu extends JFrame {
         lblTitle.setForeground(grisTexto);
         lblTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel lblValue = new JLabel(valor);
         lblValue.setFont(new Font("Segoe UI", Font.BOLD, 36));
         lblValue.setForeground(colorAccent);
         lblValue.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -229,15 +285,11 @@ public class Menu extends JFrame {
         contenedorReloj.setVisible(true);
     }
 
-    // =========================================================================
-    // NUEVO MÉTODO: INYECTAR EL MÓDULO VISUAL DE PLANILLAS
-    // =========================================================================
     private void abrirPlanillas() {
         JFrame contenedorPlanilla = new JFrame("Módulo de Planillas y Nómina");
         contenedorPlanilla.setSize(1000, 700);
         contenedorPlanilla.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         contenedorPlanilla.setLocationRelativeTo(this);
-        // Instanciamos y agregamos el panel creado en el paso anterior
         contenedorPlanilla.add(new PlanillaPanel());
         contenedorPlanilla.setVisible(true);
     }

@@ -256,13 +256,16 @@ public class ExpedienteController {
             stmt.setString(14, idEmpleado);
 
             int filasAfectadas = stmt.executeUpdate();
-            conn.commit(); // Confirmamos la transacción atómica
 
+            // 🛡️ El commit se hace SOLO si realmente se actualizó el registro
             if (filasAfectadas > 0) {
+                conn.commit(); // Guardamos definitivamente en la base de datos
                 JOptionPane.showMessageDialog(vista, "¡El expediente ha sido actualizado correctamente!", "Éxito", JOptionPane.INFORMATION_MESSAGE);
                 vista.dispose(); // Cierra el formulario tras guardar cambios con éxito
             } else {
-                JOptionPane.showMessageDialog(vista, "No se encontró ningún empleado con el ID especificado.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+                // Si no se afectaron filas, no hay nada que guardar, hacemos rollback por seguridad
+                conn.rollback();
+                JOptionPane.showMessageDialog(vista, "No se encontró ningún empleado con el ID especificado o no hubo cambios.", "Advertencia", JOptionPane.WARNING_MESSAGE);
             }
 
         } catch (SQLException ex) {

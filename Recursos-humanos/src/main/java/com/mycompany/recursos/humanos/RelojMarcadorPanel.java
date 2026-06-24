@@ -162,7 +162,7 @@ public class RelojMarcadorPanel extends JPanel {
         timer.start();
     }
 
-    private void registrarMarca(boolean esEntrada) {
+   private void registrarMarca(boolean esEntrada) {
         int filaSeleccionada = tablaEmpleados.getSelectedRow();
         if (filaSeleccionada == -1) {
             JOptionPane.showMessageDialog(this, "Por favor, seleccione un empleado de la lista.", "Aviso", JOptionPane.WARNING_MESSAGE);
@@ -171,30 +171,43 @@ public class RelojMarcadorPanel extends JPanel {
 
         int idEmpleado = (int) modeloTabla.getValueAt(filaSeleccionada, 0);
         String nombre = (String) modeloTabla.getValueAt(filaSeleccionada, 2);
-        LocalDateTime ahora = LocalDateTime.now();
+        java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
 
         try (Connection con = Conexion.obtenerConexion()) {
-            if (esEntrada) {
-                String sqlInsert = "INSERT INTO marcaciones (id_empleado, fecha_hora_entrada, fecha_hora_salida) VALUES (?, ?, NULL)";
-                try (PreparedStatement ps = con.prepareStatement(sqlInsert)) {
-                    ps.setInt(1, idEmpleado);
-                    ps.setTimestamp(2, Timestamp.valueOf(ahora));
-                    ps.executeUpdate();
-                    JOptionPane.showMessageDialog(this, "✅ Entrada registrada correctamente para:\n" + nombre, "Registro Exitoso", JOptionPane.INFORMATION_MESSAGE);
-                }
-            } else {
-                String sqlUpdateUniversal = "UPDATE marcaciones SET fecha_hora_salida = ? WHERE id_marcacion = (SELECT MAX(id_marcacion) FROM (SELECT id_marcacion FROM marcaciones WHERE id_empleado = ? AND fecha_hora_salida IS NULL) AS temp)";
-                try (PreparedStatement ps = con.prepareStatement(sqlUpdateUniversal)) {
-                    ps.setTimestamp(1, Timestamp.valueOf(ahora));
-                    ps.setInt(2, idEmpleado);
-                    int filasAfectadas = ps.executeUpdate();
-                    
-                    if (filasAfectadas > 0) {
-                        JOptionPane.showMessageDialog(this, "✅ Salida registrada correctamente para:\n" + nombre, "Registro Exitoso", JOptionPane.INFORMATION_MESSAGE);
-                    } else {
-                        JOptionPane.showMessageDialog(this, "⚠️ El empleado no posee marcas de Entrada pendientes por cerrar.", "Aviso del Sistema", JOptionPane.WARNING_MESSAGE);
+            try {
+                if (esEntrada) {
+                    String sqlInsert = "INSERT INTO marcaciones (id_empleado, fecha_hora_entrada, fecha_hora_salida) VALUES (?, ?, NULL)";
+                    try (java.sql.PreparedStatement ps = con.prepareStatement(sqlInsert)) {
+                        ps.setInt(1, idEmpleado);
+                        ps.setTimestamp(2, java.sql.Timestamp.valueOf(ahora));
+                        ps.executeUpdate();
+                        
+                        // 🛡️ ¡LA MAGIA OCURRE AQUÍ! Forzamos el guardado en XAMPP
+                        con.commit(); 
+                        
+                        JOptionPane.showMessageDialog(this, "✅ Entrada registrada correctamente para:\n" + nombre, "Registro Exitoso", JOptionPane.INFORMATION_MESSAGE);
+                    }
+                } else {
+                    String sqlUpdateUniversal = "UPDATE marcaciones SET fecha_hora_salida = ? WHERE id_marcacion = (SELECT MAX(id_marcacion) FROM (SELECT id_marcacion FROM marcaciones WHERE id_empleado = ? AND fecha_hora_salida IS NULL) AS temp)";
+                    try (java.sql.PreparedStatement ps = con.prepareStatement(sqlUpdateUniversal)) {
+                        ps.setTimestamp(1, java.sql.Timestamp.valueOf(ahora));
+                        ps.setInt(2, idEmpleado);
+                        int filasAfectadas = ps.executeUpdate();
+                        
+                        if (filasAfectadas > 0) {
+                            // 🛡️ ¡LA MAGIA OCURRE AQUÍ! Forzamos el guardado en XAMPP
+                            con.commit();
+                            
+                            JOptionPane.showMessageDialog(this, "✅ Salida registrada correctamente para:\n" + nombre, "Registro Exitoso", JOptionPane.INFORMATION_MESSAGE);
+                        } else {
+                            JOptionPane.showMessageDialog(this, "⚠️ El empleado no posee marcas de Entrada pendientes por cerrar.", "Aviso del Sistema", JOptionPane.WARNING_MESSAGE);
+                        }
                     }
                 }
+            } catch (java.sql.SQLException ex) {
+                // Si algo falla, deshacemos cualquier cambio a medias para proteger la base de datos
+                con.rollback(); 
+                throw ex; // Lanzamos el error al catch principal
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error de persistencia: " + e.getMessage(), "Error SQL", JOptionPane.ERROR_MESSAGE);

@@ -9,45 +9,61 @@ import java.sql.ResultSet;
 public class ProcesadorNomina {
 
     /**
-     * Calcula el salario neto conectándose dinámicamente a la tabla parametros_ley.
-     * Aplica estrictamente el redondeo bancario (HALF_EVEN) en cada operación.
-     * * @param horasTrabajadas Total de horas calculadas por ControlHoras
-     * @param pagoPorHora Cuánto se le paga por hora al empleado
-     * @return El salario neto final redondeado a 2 decimales y listo para la BD
+     * Aplica la ecuación del arquitecto usando los datos reales de incidencias.
+     * Calcula deducciones por ley, descuentos por tardanzas y pagos por horas extras.
      */
-    public static BigDecimal obtenerSalarioNeto(BigDecimal horasTrabajadas, BigDecimal pagoPorHora) {
-        // 1. Calculamos el sueldo base aplicando redondeo desde el primer paso
-        BigDecimal salarioBruto = horasTrabajadas.multiply(pagoPorHora).setScale(2, RoundingMode.HALF_EVEN);
+    public static BigDecimal obtenerSalarioNeto(BigDecimal salarioBase, long minutosTardanza, double horasExtras) {
         
-        // Acumulador para la suma de todos los descuentos
-        BigDecimal totalDescuentos = BigDecimal.ZERO;
+        // 1. Calculamos cuánto vale 1 hora de trabajo de este empleado
+        // Asumiendo una jornada estándar de 30 días al mes, 8 horas diarias = 240 horas mensuales
+        BigDecimal pagoPorHora = salarioBase.divide(new BigDecimal("240"), 4, RoundingMode.HALF_EVEN);
         
-        // Consulta SQL: Nota -> Asegúrate de que la columna 'estado' (booleana) exista en tu tabla parametros_ley
+        // 2. CALCULAMOS LOS COMPONENTES DE LA ECUACIÓN
+        
+        // [Horas Extras] -> Se pagan con un recargo (ej. 1.5 veces el valor de la hora normal)
+        BigDecimal pagoHorasExtras = BigDecimal.valueOf(horasExtras)
+                .multiply(pagoPorHora)
+                .multiply(new BigDecimal("1.5"))
+                .setScale(2, RoundingMode.HALF_EVEN);
+        
+        // [Deducción por Tardanzas] -> Convertimos minutos a horas y los multiplicamos por el valor de su hora
+        BigDecimal deduccionTardanza = BigDecimal.valueOf(minutosTardanza)
+                .divide(new BigDecimal("60"), 4, RoundingMode.HALF_EVEN)
+                .multiply(pagoPorHora)
+                .setScale(2, RoundingMode.HALF_EVEN);
+        
+        // Unimos el Salario Base + Horas Extras (Dejamos Bonos en 0 por ahora)
+        BigDecimal ingresosTotales = salarioBase.add(pagoHorasExtras);
+        
+        // Acumulador para los descuentos de ley
+        BigDecimal totalDeduccionesLey = BigDecimal.ZERO;
+        
         String sql = "SELECT porcentaje_descuento FROM parametros_ley WHERE estado = true";
 
         try (Connection con = Conexion.obtenerConexion();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
-            // 2. Bucle Dinámico: Recorre cada impuesto activo
+            // 3. Bucle Dinámico para Impuestos (AFP, Seguro, Renta, etc.)
             while (rs.next()) {
                 BigDecimal porcentaje = rs.getBigDecimal("porcentaje_descuento");
                 
-                // ⚠️ CRÍTICO: Calculamos la deducción y redondeamos INMEDIATAMENTE
-                BigDecimal deduccion = salarioBruto.multiply(porcentaje).setScale(2, RoundingMode.HALF_EVEN);
-                
-                // Sumamos al total acumulado
-                totalDescuentos = totalDescuentos.add(deduccion);
+                // Las leyes se aplican sobre los ingresos totales acumulados
+                BigDecimal deduccion = ingresosTotales.multiply(porcentaje).setScale(2, RoundingMode.HALF_EVEN);
+                totalDeduccionesLey = totalDeduccionesLey.add(deduccion);
             }
 
         } catch (Exception e) {
             System.err.println("🚨 Error crítico al leer parámetros de ley: " + e.getMessage());
         }
 
-        // 3. Aplicamos la fórmula matemática: Salario_Neto = Bruto - Deducciones
-        BigDecimal salarioNeto = salarioBruto.subtract(totalDescuentos);
+        // 4. AGRUPAMOS SEGÚN LA FÓRMULA MAESTRA
+        // Total Deducciones = Leyes + Descuento por llegar tarde
+        BigDecimal totalDescuentos = totalDeduccionesLey.add(deduccionTardanza);
+        
+        // Salario Neto = Ingresos - Descuentos
+        BigDecimal salarioNeto = ingresosTotales.subtract(totalDescuentos);
 
-        // 4. Retornamos el valor asegurando la escala final de 2 decimales
         return salarioNeto.setScale(2, RoundingMode.HALF_EVEN);
     }
 }

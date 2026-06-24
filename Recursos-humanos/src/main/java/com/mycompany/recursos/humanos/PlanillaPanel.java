@@ -66,6 +66,7 @@ public class PlanillaPanel extends JPanel {
         txtFechaPago = new JTextField(hoy.toString(), 10);
         controlesPanel.add(txtFechaPago);
 
+        // 🆕 BOTÓN 1: Procesar Nómina Fija Tradicional
         JButton btnProcesar = new JButton("Procesar Nómina");
         btnProcesar.setBackground(azulRoyal);
         btnProcesar.setForeground(Color.WHITE);
@@ -73,6 +74,15 @@ public class PlanillaPanel extends JPanel {
         btnProcesar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnProcesar.addActionListener(e -> ejecutarCierre());
         controlesPanel.add(btnProcesar);
+
+        // 🆕 BOTÓN 2: ¡EL NUEVO PUENTE CON EL RELOJ MARCADOR!
+        JButton btnProcesarReloj = new JButton("Sincronizar Reloj y Procesar");
+        btnProcesarReloj.setBackground(azulNavy); // Distinción de color corporativo
+        btnProcesarReloj.setForeground(Color.WHITE);
+        btnProcesarReloj.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnProcesarReloj.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnProcesarReloj.addActionListener(e -> ejecutarCierrePorReloj());
+        controlesPanel.add(btnProcesarReloj);
 
         topPanel.add(controlesPanel, BorderLayout.CENTER);
         add(topPanel, BorderLayout.NORTH);
@@ -108,7 +118,6 @@ public class PlanillaPanel extends JPanel {
         btnGenerarPDF.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnGenerarPDF.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         
-        // 🔌 EVENTO CONECTADO A GENERADOR PDF Y ENVIADOR CORREO
         btnGenerarPDF.addActionListener(e -> {
             int filaSeleccionada = tablaPagos.getSelectedRow();
             if (filaSeleccionada == -1) {
@@ -116,16 +125,12 @@ public class PlanillaPanel extends JPanel {
                 return;
             }
             
-            // 1. Obtener el ID del pago desde la columna 0
             int idPago = (int) modeloTabla.getValueAt(filaSeleccionada, 0);
-            
-            // 2. Cambiar cursor a modo de espera y deshabilitar botón
             setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             btnGenerarPDF.setEnabled(false);
 
-            // 3. Ejecutar en un hilo de fondo para no congelar la interfaz
             new Thread(() -> {
-                String sql = "SELECT e.nombre_completo, e.correo, p.salario_neto " +
+                String sql = "SELECT e.nombre_completo, e.correo " +
                              "FROM pagos_nomina p " +
                              "INNER JOIN empleados e ON p.id_empleado = e.id_empleado " +
                              "WHERE p.id_pago = ?";
@@ -138,9 +143,11 @@ public class PlanillaPanel extends JPanel {
                         if (rs.next()) {
                             String nombreEmpleado = rs.getString("nombre_completo");
                             String correoEmpleado = rs.getString("correo");
-                            double salarioNeto = rs.getBigDecimal("salario_neto").doubleValue();
                             
-                            // Validar si el empleado tiene correo
+                            // Recuperar el salario neto numérico de la fila seleccionada (quitando el '$')
+                            String netoStr = modeloTabla.getValueAt(filaSeleccionada, 5).toString().replace("$", "");
+                            double salarioNeto = Double.parseDouble(netoStr);
+                            
                             if (correoEmpleado == null || correoEmpleado.trim().isEmpty()) {
                                 SwingUtilities.invokeLater(() -> {
                                     JOptionPane.showMessageDialog(this, "El colaborador " + nombreEmpleado + " no tiene un correo electrónico registrado.", "Error de Envío", JOptionPane.ERROR_MESSAGE);
@@ -148,14 +155,12 @@ public class PlanillaPanel extends JPanel {
                                 return;
                             }
 
-                            // 4. Instanciar y ejecutar tus componentes
                             GeneradorPDF generador = new GeneradorPDF();
                             String rutaPdfGenerado = generador.crearBoleta(nombreEmpleado, salarioNeto);
                             
                             EnviadorCorreo correo = new EnviadorCorreo();
                             correo.enviar(correoEmpleado, nombreEmpleado, rutaPdfGenerado);
                             
-                            // 5. Notificar éxito en el hilo principal
                             SwingUtilities.invokeLater(() -> {
                                 JOptionPane.showMessageDialog(this, "✅ Boleta generada y enviada con éxito a:\n" + correoEmpleado, "Proceso Completado", JOptionPane.INFORMATION_MESSAGE);
                             });
@@ -168,12 +173,10 @@ public class PlanillaPanel extends JPanel {
                     }
                 } catch (Exception ex) {
                     System.err.println("Error en el flujo de PDF/Correo: " + ex.getMessage());
-                    ex.printStackTrace();
                     SwingUtilities.invokeLater(() -> {
-                        JOptionPane.showMessageDialog(this, "Ocurrió un error al procesar el envío. Revisa la consola.", "Error Crítico", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(this, "Ocurrió un error al procesar el envío.", "Error Crítico", JOptionPane.ERROR_MESSAGE);
                     });
                 } finally {
-                    // 6. Restablecer siempre el estado
                     SwingUtilities.invokeLater(() -> {
                         setCursor(Cursor.getDefaultCursor());
                         btnGenerarPDF.setEnabled(true);
@@ -188,22 +191,50 @@ public class PlanillaPanel extends JPanel {
 
     private void ejecutarCierre() {
         try {
-            // Convertimos los textos a fechas SQL
             Date fechaInicio = Date.valueOf(txtFechaInicio.getText());
             Date fechaFin = Date.valueOf(txtFechaFin.getText());
             Date fechaPago = Date.valueOf(txtFechaPago.getText());
 
-            // ⚠️ AQUÍ CONECTAMOS LA VISTA CON EL CORAZÓN DEL SISTEMA
             boolean exito = ServicioPlanilla.procesarCierreNominaMasivo(fechaInicio, fechaFin, fechaPago);
 
             if (exito) {
                 JOptionPane.showMessageDialog(this, "Nómina procesada exitosamente.", "Operación Completa", JOptionPane.INFORMATION_MESSAGE);
-                cargarPagosRecientes(); // Actualizamos la tabla
+                cargarPagosRecientes();
             } else {
                 JOptionPane.showMessageDialog(this, "Ocurrió un error en el procesamiento. Se revirtieron los cambios.", "Error Transaccional", JOptionPane.ERROR_MESSAGE);
             }
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this, "Formato de fecha inválido. Use YYYY-MM-DD.", "Error de Formato", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    // 🆕 ACCIÓN PRINCIPAL DEL NUEVO BOTÓN AUTOMATIZADO
+    private void ejecutarCierrePorReloj() {
+        try {
+            Date fechaInicio = Date.valueOf(txtFechaInicio.getText());
+            Date fechaFin = Date.valueOf(txtFechaFin.getText());
+            Date fechaPago = Date.valueOf(txtFechaPago.getText());
+
+            // Interfaz reactiva en modo espera
+            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+            new Thread(() -> {
+                // Invocamos el cálculo matemático basado en la asistencia real del reloj
+                boolean exito = ServicioPlanilla.procesarCierreNominaPorReloj(fechaInicio, fechaFin, fechaPago);
+
+                SwingUtilities.invokeLater(() -> {
+                    setCursor(Cursor.getDefaultCursor());
+                    if (exito) {
+                        JOptionPane.showMessageDialog(this, "✅ ¡Planilla cerrada con éxito!\nLas horas se calcularon de forma exacta usando el Reloj Marcador.", "Sincronización Exitosa", JOptionPane.INFORMATION_MESSAGE);
+                        cargarPagosRecientes(); // Recarga la tabla de inmediato
+                    } else {
+                        JOptionPane.showMessageDialog(this, "❌ Error transaccional al leer las marcaciones. No se guardó ningún cambio.", "Error del Sistema", JOptionPane.ERROR_MESSAGE);
+                    }
+                });
+            }).start();
 
         } catch (IllegalArgumentException ex) {
+            setCursor(Cursor.getDefaultCursor());
             JOptionPane.showMessageDialog(this, "Formato de fecha inválido. Use YYYY-MM-DD.", "Error de Formato", JOptionPane.WARNING_MESSAGE);
         }
     }
